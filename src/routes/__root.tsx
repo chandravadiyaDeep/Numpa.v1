@@ -77,18 +77,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "UDA — Universal Data Analyzer" },
+      { title: "UDA — AI Data Preparation Studio for CSV" },
       {
         name: "description",
-        content: "AI-powered CSV preparation studio: profile, clean, visualize and export datasets.",
+        content: "Universal Data Analyzer: upload a CSV, profile it, build a preprocessing pipeline, visualize it and export a model-ready dataset.",
       },
-      { property: "og:title", content: "UDA — Universal Data Analyzer" },
+      { property: "og:title", content: "UDA — AI Data Preparation Studio for CSV" },
       {
         property: "og:description",
-        content: "AI-powered CSV preparation studio: profile, clean, visualize and export datasets.",
+        content: "Universal Data Analyzer: upload a CSV, profile it, build a preprocessing pipeline, visualize it and export a model-ready dataset.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "UDA — AI Data Preparation Studio for CSV" },
+      { name: "twitter:description", content: "Universal Data Analyzer: upload a CSV, profile it, build a preprocessing pipeline, visualize it and export a model-ready dataset." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1041eca3-651d-4842-9b8a-0ac23db99739/id-preview-0bdb4230--8b2146ed-ef1a-4633-b1f9-0a46f7acd527.lovable.app-1785435696161.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1041eca3-651d-4842-9b8a-0ac23db99739/id-preview-0bdb4230--8b2146ed-ef1a-4633-b1f9-0a46f7acd527.lovable.app-1785435696161.png" },
     ],
     links: [
       {

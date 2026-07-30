@@ -27,7 +27,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Profile, clean and export CSV datasets with a visual preprocessing pipeline built for analysts.",
+          "Universal Data Analyzer: upload a CSV, profile it, build a preprocessing pipeline, visualize it and export a model-ready dataset.",
       },
     ],
   }),
