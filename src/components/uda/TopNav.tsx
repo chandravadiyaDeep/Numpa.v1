@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Database, Moon, Sun, User, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useStudio } from "@/lib/studio-store";
+import { hydrateStudio, useStudio } from "@/lib/studio-store";
 
 const NAV = [
   { to: "/analysis", label: "Analysis" },
