@@ -10,6 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { PageShell } from "@/components/uda/PageShell";
+import { OpIcon } from "@/components/uda/OpIcon";
 import { store, useStudio } from "@/lib/studio-store";
 import {
   OPERATIONS,
@@ -117,7 +118,7 @@ function PreprocessingPage() {
                     : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                 }`}
               >
-                <span className="text-base leading-none">{o.icon}</span>
+                <OpIcon op={o.id} className="h-4 w-4 text-cyan" />
                 {o.label}
               </button>
             ))}
@@ -130,8 +131,8 @@ function PreprocessingPage() {
             Configuration
           </h2>
           <div className="mt-5 flex items-center gap-3">
-            <span className="grid h-11 w-11 place-items-center rounded-xl bg-secondary text-lg">
-              {meta.icon}
+            <span className="grid h-11 w-11 place-items-center rounded-xl bg-secondary">
+              <OpIcon op={op} className="h-5 w-5 text-cyan" />
             </span>
             <div className="min-w-0">
               <p className="font-semibold">{meta.label}</p>
@@ -215,7 +216,7 @@ function PreprocessingPage() {
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-base leading-none">{opMeta(s.op).icon}</span>
+                    <OpIcon op={s.op} className="h-4 w-4 shrink-0 text-cyan" />
                     <span className="min-w-0 truncate text-sm font-semibold">
                       {opMeta(s.op).label}
                     </span>
