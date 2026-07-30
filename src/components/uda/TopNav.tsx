@@ -16,8 +16,13 @@ export function TopNav() {
   const [dark, setDark] = useState(true);
 
   useEffect(() => {
+    hydrateStudio();
+  }, []);
+
+  useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
   }, [dark]);
+
 
   return (
     <header className="sticky top-0 z-50 glass border-b">
