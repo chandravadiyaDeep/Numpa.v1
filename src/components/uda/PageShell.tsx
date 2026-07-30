@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Upload } from "lucide-react";
 import { TopNav } from "./TopNav";
+import { WorkspaceBar } from "./WorkspaceBar";
 import { useStudio } from "@/lib/studio-store";
 
 export function PageShell({
@@ -30,6 +31,7 @@ export function PageShell({
           </div>
           {actions}
         </div>
+        <WorkspaceBar />
         {requiresDataset && !dataset ? <EmptyState /> : children}
       </main>
     </div>
