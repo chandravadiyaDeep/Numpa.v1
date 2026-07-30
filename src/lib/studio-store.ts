@@ -65,3 +65,30 @@ export function useActiveDataset() {
   const s = useStudio();
   return s.processed ?? s.dataset;
 }
+
+/* --------------------------- session persistence -------------------------- */
+
+const KEY = "uda-studio-state";
+let hydrated = false;
+
+/** Restore the workspace after a page reload. Call once, client-side. */
+export function hydrateStudio() {
+  if (hydrated || typeof window === "undefined") return;
+  hydrated = true;
+  try {
+    const raw = window.sessionStorage.getItem(KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as State;
+      if (parsed?.dataset) set(parsed);
+    }
+  } catch {
+    /* ignore corrupt state */
+  }
+  listeners.add(() => {
+    try {
+      window.sessionStorage.setItem(KEY, JSON.stringify(state));
+    } catch {
+      /* quota exceeded — keep working in memory */
+    }
+  });
+}
