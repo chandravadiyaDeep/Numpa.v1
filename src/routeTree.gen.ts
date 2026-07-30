@@ -10,33 +10,80 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AnalysisRouteImport } from './routes/analysis'
+import { Route as MlReadinessRouteImport } from './routes/ml-readiness'
+import { Route as PreprocessingRouteImport } from './routes/preprocessing'
+import { Route as VisualizationRouteImport } from './routes/visualization'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AnalysisRoute = AnalysisRouteImport.update({
+  id: '/analysis',
+  path: '/analysis',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MlReadinessRoute = MlReadinessRouteImport.update({
+  id: '/ml-readiness',
+  path: '/ml-readiness',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PreprocessingRoute = PreprocessingRouteImport.update({
+  id: '/preprocessing',
+  path: '/preprocessing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VisualizationRoute = VisualizationRouteImport.update({
+  id: '/visualization',
+  path: '/visualization',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/analysis': typeof AnalysisRoute
+  '/ml-readiness': typeof MlReadinessRoute
+  '/preprocessing': typeof PreprocessingRoute
+  '/visualization': typeof VisualizationRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/analysis': typeof AnalysisRoute
+  '/ml-readiness': typeof MlReadinessRoute
+  '/preprocessing': typeof PreprocessingRoute
+  '/visualization': typeof VisualizationRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/analysis': typeof AnalysisRoute
+  '/ml-readiness': typeof MlReadinessRoute
+  '/preprocessing': typeof PreprocessingRoute
+  '/visualization': typeof VisualizationRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    '/' | '/analysis' | '/ml-readiness' | '/preprocessing' | '/visualization'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/analysis' | '/ml-readiness' | '/preprocessing' | '/visualization'
+  id:
+    | '__root__'
+    | '/'
+    | '/analysis'
+    | '/ml-readiness'
+    | '/preprocessing'
+    | '/visualization'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AnalysisRoute: typeof AnalysisRoute
+  MlReadinessRoute: typeof MlReadinessRoute
+  PreprocessingRoute: typeof PreprocessingRoute
+  VisualizationRoute: typeof VisualizationRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +95,44 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/analysis': {
+      id: '/analysis'
+      path: '/analysis'
+      fullPath: '/analysis'
+      preLoaderRoute: typeof AnalysisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ml-readiness': {
+      id: '/ml-readiness'
+      path: '/ml-readiness'
+      fullPath: '/ml-readiness'
+      preLoaderRoute: typeof MlReadinessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/preprocessing': {
+      id: '/preprocessing'
+      path: '/preprocessing'
+      fullPath: '/preprocessing'
+      preLoaderRoute: typeof PreprocessingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/visualization': {
+      id: '/visualization'
+      path: '/visualization'
+      fullPath: '/visualization'
+      preLoaderRoute: typeof VisualizationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AnalysisRoute: AnalysisRoute,
+  MlReadinessRoute: MlReadinessRoute,
+  PreprocessingRoute: PreprocessingRoute,
+  VisualizationRoute: VisualizationRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
