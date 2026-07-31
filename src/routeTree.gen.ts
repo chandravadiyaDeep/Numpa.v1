@@ -9,129 +9,271 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AnalysisRouteImport } from './routes/analysis'
-import { Route as MlReadinessRouteImport } from './routes/ml-readiness'
-import { Route as PreprocessingRouteImport } from './routes/preprocessing'
-import { Route as VisualizationRouteImport } from './routes/visualization'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedAnalysisRouteImport } from './routes/_authenticated/analysis'
+import { Route as AuthenticatedMlReadinessRouteImport } from './routes/_authenticated/ml-readiness'
+import { Route as AuthenticatedPreprocessingRouteImport } from './routes/_authenticated/preprocessing'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedVisualizationRouteImport } from './routes/_authenticated/visualization'
 
-const IndexRoute = IndexRouteImport.update({
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AnalysisRoute = AnalysisRouteImport.update({
+const AuthenticatedAnalysisRoute = AuthenticatedAnalysisRouteImport.update({
   id: '/analysis',
   path: '/analysis',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const MlReadinessRoute = MlReadinessRouteImport.update({
-  id: '/ml-readiness',
-  path: '/ml-readiness',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedMlReadinessRoute =
+  AuthenticatedMlReadinessRouteImport.update({
+    id: '/ml-readiness',
+    path: '/ml-readiness',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPreprocessingRoute =
+  AuthenticatedPreprocessingRouteImport.update({
+    id: '/preprocessing',
+    path: '/preprocessing',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const PreprocessingRoute = PreprocessingRouteImport.update({
-  id: '/preprocessing',
-  path: '/preprocessing',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const VisualizationRoute = VisualizationRouteImport.update({
-  id: '/visualization',
-  path: '/visualization',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const AuthenticatedVisualizationRoute =
+  AuthenticatedVisualizationRouteImport.update({
+    id: '/visualization',
+    path: '/visualization',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/analysis': typeof AnalysisRoute
-  '/ml-readiness': typeof MlReadinessRoute
-  '/preprocessing': typeof PreprocessingRoute
-  '/visualization': typeof VisualizationRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/login': typeof LoginRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/signup': typeof SignupRoute
+  '/analysis': typeof AuthenticatedAnalysisRoute
+  '/ml-readiness': typeof AuthenticatedMlReadinessRoute
+  '/preprocessing': typeof AuthenticatedPreprocessingRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/visualization': typeof AuthenticatedVisualizationRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/analysis': typeof AnalysisRoute
-  '/ml-readiness': typeof MlReadinessRoute
-  '/preprocessing': typeof PreprocessingRoute
-  '/visualization': typeof VisualizationRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/login': typeof LoginRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/signup': typeof SignupRoute
+  '/analysis': typeof AuthenticatedAnalysisRoute
+  '/ml-readiness': typeof AuthenticatedMlReadinessRoute
+  '/preprocessing': typeof AuthenticatedPreprocessingRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/visualization': typeof AuthenticatedVisualizationRoute
+  '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/analysis': typeof AnalysisRoute
-  '/ml-readiness': typeof MlReadinessRoute
-  '/preprocessing': typeof PreprocessingRoute
-  '/visualization': typeof VisualizationRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/login': typeof LoginRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/signup': typeof SignupRoute
+  '/_authenticated/analysis': typeof AuthenticatedAnalysisRoute
+  '/_authenticated/ml-readiness': typeof AuthenticatedMlReadinessRoute
+  '/_authenticated/preprocessing': typeof AuthenticatedPreprocessingRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/visualization': typeof AuthenticatedVisualizationRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/analysis' | '/ml-readiness' | '/preprocessing' | '/visualization'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/analysis' | '/ml-readiness' | '/preprocessing' | '/visualization'
-  id:
-    | '__root__'
     | '/'
+    | '/forgot-password'
+    | '/login'
+    | '/reset-password'
+    | '/signup'
     | '/analysis'
     | '/ml-readiness'
     | '/preprocessing'
+    | '/profile'
     | '/visualization'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/forgot-password'
+    | '/login'
+    | '/reset-password'
+    | '/signup'
+    | '/analysis'
+    | '/ml-readiness'
+    | '/preprocessing'
+    | '/profile'
+    | '/visualization'
+    | '/'
+  id:
+    | '__root__'
+    | '/_authenticated'
+    | '/forgot-password'
+    | '/login'
+    | '/reset-password'
+    | '/signup'
+    | '/_authenticated/analysis'
+    | '/_authenticated/ml-readiness'
+    | '/_authenticated/preprocessing'
+    | '/_authenticated/profile'
+    | '/_authenticated/visualization'
+    | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AnalysisRoute: typeof AnalysisRoute
-  MlReadinessRoute: typeof MlReadinessRoute
-  PreprocessingRoute: typeof PreprocessingRoute
-  VisualizationRoute: typeof VisualizationRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
+  LoginRoute: typeof LoginRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
+  SignupRoute: typeof SignupRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/analysis': {
-      id: '/analysis'
+    '/_authenticated/analysis': {
+      id: '/_authenticated/analysis'
       path: '/analysis'
       fullPath: '/analysis'
-      preLoaderRoute: typeof AnalysisRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedAnalysisRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/ml-readiness': {
-      id: '/ml-readiness'
+    '/_authenticated/ml-readiness': {
+      id: '/_authenticated/ml-readiness'
       path: '/ml-readiness'
       fullPath: '/ml-readiness'
-      preLoaderRoute: typeof MlReadinessRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedMlReadinessRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/preprocessing': {
-      id: '/preprocessing'
+    '/_authenticated/preprocessing': {
+      id: '/_authenticated/preprocessing'
       path: '/preprocessing'
       fullPath: '/preprocessing'
-      preLoaderRoute: typeof PreprocessingRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedPreprocessingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/visualization': {
-      id: '/visualization'
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/visualization': {
+      id: '/_authenticated/visualization'
       path: '/visualization'
       fullPath: '/visualization'
-      preLoaderRoute: typeof VisualizationRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedVisualizationRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAnalysisRoute: typeof AuthenticatedAnalysisRoute
+  AuthenticatedMlReadinessRoute: typeof AuthenticatedMlReadinessRoute
+  AuthenticatedPreprocessingRoute: typeof AuthenticatedPreprocessingRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedVisualizationRoute: typeof AuthenticatedVisualizationRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAnalysisRoute: AuthenticatedAnalysisRoute,
+  AuthenticatedMlReadinessRoute: AuthenticatedMlReadinessRoute,
+  AuthenticatedPreprocessingRoute: AuthenticatedPreprocessingRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedVisualizationRoute: AuthenticatedVisualizationRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  AnalysisRoute: AnalysisRoute,
-  MlReadinessRoute: MlReadinessRoute,
-  PreprocessingRoute: PreprocessingRoute,
-  VisualizationRoute: VisualizationRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  ForgotPasswordRoute: ForgotPasswordRoute,
+  LoginRoute: LoginRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
+  SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

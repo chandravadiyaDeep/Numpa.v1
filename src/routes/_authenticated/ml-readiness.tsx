@@ -4,7 +4,7 @@ import { PageShell } from "@/components/uda/PageShell";
 import { useActiveDataset, useStudio } from "@/lib/studio-store";
 import { mlReadiness, profileDataset, toCsv } from "@/lib/dataset";
 
-export const Route = createFileRoute("/ml-readiness")({
+export const Route = createFileRoute("/_authenticated/ml-readiness")({
   head: () => ({
     meta: [
       { title: "ML Readiness — UDA" },
