@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAnalysisRouteImport } from './routes/_authenticated/analysis'
 import { Route as AuthenticatedMlReadinessRouteImport } from './routes/_authenticated/ml-readiness'
@@ -18,6 +19,11 @@ import { Route as AuthenticatedVisualizationRouteImport } from './routes/_authen
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
@@ -51,12 +57,14 @@ const AuthenticatedVisualizationRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
+  '/login': typeof LoginRoute
   '/analysis': typeof AuthenticatedAnalysisRoute
   '/ml-readiness': typeof AuthenticatedMlReadinessRoute
   '/preprocessing': typeof AuthenticatedPreprocessingRoute
   '/visualization': typeof AuthenticatedVisualizationRoute
 }
 export interface FileRoutesByTo {
+  '/login': typeof LoginRoute
   '/analysis': typeof AuthenticatedAnalysisRoute
   '/ml-readiness': typeof AuthenticatedMlReadinessRoute
   '/preprocessing': typeof AuthenticatedPreprocessingRoute
@@ -66,6 +74,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/login': typeof LoginRoute
   '/_authenticated/analysis': typeof AuthenticatedAnalysisRoute
   '/_authenticated/ml-readiness': typeof AuthenticatedMlReadinessRoute
   '/_authenticated/preprocessing': typeof AuthenticatedPreprocessingRoute
@@ -75,12 +84,24 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/analysis' | '/ml-readiness' | '/preprocessing' | '/visualization'
+    | '/'
+    | '/login'
+    | '/analysis'
+    | '/ml-readiness'
+    | '/preprocessing'
+    | '/visualization'
   fileRoutesByTo: FileRoutesByTo
-  to: '/analysis' | '/ml-readiness' | '/preprocessing' | '/visualization' | '/'
+  to:
+    | '/login'
+    | '/analysis'
+    | '/ml-readiness'
+    | '/preprocessing'
+    | '/visualization'
+    | '/'
   id:
     | '__root__'
     | '/_authenticated'
+    | '/login'
     | '/_authenticated/analysis'
     | '/_authenticated/ml-readiness'
     | '/_authenticated/preprocessing'
@@ -90,6 +111,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +121,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/': {
@@ -160,6 +189,7 @@ const AuthenticatedRouteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
