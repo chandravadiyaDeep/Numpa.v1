@@ -17,7 +17,7 @@ import {
   qualityScore,
 } from "@/lib/dataset";
 
-export const Route = createFileRoute("/analysis")({
+export const Route = createFileRoute("/_authenticated/analysis")({
   head: () => ({
     meta: [
       { title: "Dataset Analysis — UDA" },

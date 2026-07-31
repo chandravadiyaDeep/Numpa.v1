@@ -14,7 +14,7 @@ import { TopNav } from "@/components/uda/TopNav";
 import { parseCsv } from "@/lib/dataset";
 import { store, useStudio } from "@/lib/studio-store";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: "UDA — AI Data Preparation Studio for CSV" },

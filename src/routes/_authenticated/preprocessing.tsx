@@ -21,7 +21,7 @@ import {
   type OperationId,
 } from "@/lib/dataset";
 
-export const Route = createFileRoute("/preprocessing")({
+export const Route = createFileRoute("/_authenticated/preprocessing")({
   head: () => ({
     meta: [
       { title: "Data Preprocessing Studio — UDA" },

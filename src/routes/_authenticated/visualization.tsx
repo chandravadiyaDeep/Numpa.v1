@@ -28,7 +28,7 @@ import {
   profileDataset,
 } from "@/lib/dataset";
 
-export const Route = createFileRoute("/visualization")({
+export const Route = createFileRoute("/_authenticated/visualization")({
   head: () => ({
     meta: [
       { title: "Visualization — UDA" },
