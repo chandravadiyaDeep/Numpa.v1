@@ -92,12 +92,38 @@ export function TopNav() {
           >
             {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
-          <button
-            aria-label="User menu"
-            className="grid h-9 w-9 place-items-center rounded-lg border bg-secondary/60 text-foreground transition-colors hover:bg-secondary"
-          >
-            <User className="h-4 w-4" />
-          </button>
+          <div className="relative" ref={menuRef}>
+            <button
+              aria-label="User menu"
+              onClick={() => setMenuOpen((o) => !o)}
+              className="grid h-9 w-9 place-items-center rounded-lg border bg-secondary/60 text-foreground transition-colors hover:bg-secondary"
+            >
+              <User className="h-4 w-4" />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-11 z-50 w-56 overflow-hidden rounded-xl border bg-popover p-1.5 shadow-xl">
+                <p className="truncate px-2.5 py-2 text-xs text-muted-foreground">
+                  {email ?? "Signed in"}
+                </p>
+                <Link
+                  to="/profile"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-secondary"
+                >
+                  <User className="h-4 w-4" />
+                  Profile
+                </Link>
+                <button
+                  onClick={signOut}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-secondary"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </button>
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
 
