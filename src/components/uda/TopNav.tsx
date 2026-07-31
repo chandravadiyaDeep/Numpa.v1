@@ -1,7 +1,9 @@
-import { Link, useRouterState } from "@tanstack/react-router";
-import { Database, Moon, Sun, User, Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { Database, LogOut, Moon, Sun, User, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { hydrateStudio, useStudio } from "@/lib/studio-store";
+import { supabase } from "@/integrations/supabase/client";
 
 const NAV = [
   { to: "/analysis", label: "Analysis" },
@@ -13,15 +15,38 @@ const NAV = [
 export function TopNav() {
   const { dataset } = useStudio();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [dark, setDark] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [email, setEmail] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     hydrateStudio();
+    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
   }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
   }, [dark]);
+
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  const signOut = async () => {
+    setMenuOpen(false);
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/login", replace: true });
+  };
+
 
 
   return (
