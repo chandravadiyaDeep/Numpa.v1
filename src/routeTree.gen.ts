@@ -9,129 +9,132 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AnalysisRouteImport } from './routes/analysis'
-import { Route as MlReadinessRouteImport } from './routes/ml-readiness'
-import { Route as PreprocessingRouteImport } from './routes/preprocessing'
-import { Route as VisualizationRouteImport } from './routes/visualization'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedAnalysisRouteImport } from './routes/_authenticated/analysis'
+import { Route as AuthenticatedMlReadinessRouteImport } from './routes/_authenticated/ml-readiness'
+import { Route as AuthenticatedPreprocessingRouteImport } from './routes/_authenticated/preprocessing'
+import { Route as AuthenticatedVisualizationRouteImport } from './routes/_authenticated/visualization'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/_authenticated/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AnalysisRoute = AnalysisRouteImport.update({
-  id: '/analysis',
+const AuthenticatedAnalysisRoute = AuthenticatedAnalysisRouteImport.update({
+  id: '/_authenticated/analysis',
   path: '/analysis',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MlReadinessRoute = MlReadinessRouteImport.update({
-  id: '/ml-readiness',
-  path: '/ml-readiness',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PreprocessingRoute = PreprocessingRouteImport.update({
-  id: '/preprocessing',
-  path: '/preprocessing',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const VisualizationRoute = VisualizationRouteImport.update({
-  id: '/visualization',
-  path: '/visualization',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const AuthenticatedMlReadinessRoute =
+  AuthenticatedMlReadinessRouteImport.update({
+    id: '/_authenticated/ml-readiness',
+    path: '/ml-readiness',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedPreprocessingRoute =
+  AuthenticatedPreprocessingRouteImport.update({
+    id: '/_authenticated/preprocessing',
+    path: '/preprocessing',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedVisualizationRoute =
+  AuthenticatedVisualizationRouteImport.update({
+    id: '/_authenticated/visualization',
+    path: '/visualization',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/analysis': typeof AnalysisRoute
-  '/ml-readiness': typeof MlReadinessRoute
-  '/preprocessing': typeof PreprocessingRoute
-  '/visualization': typeof VisualizationRoute
+  '/analysis': typeof AuthenticatedAnalysisRoute
+  '/ml-readiness': typeof AuthenticatedMlReadinessRoute
+  '/preprocessing': typeof AuthenticatedPreprocessingRoute
+  '/visualization': typeof AuthenticatedVisualizationRoute
+  '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/analysis': typeof AnalysisRoute
-  '/ml-readiness': typeof MlReadinessRoute
-  '/preprocessing': typeof PreprocessingRoute
-  '/visualization': typeof VisualizationRoute
+  '/analysis': typeof AuthenticatedAnalysisRoute
+  '/ml-readiness': typeof AuthenticatedMlReadinessRoute
+  '/preprocessing': typeof AuthenticatedPreprocessingRoute
+  '/visualization': typeof AuthenticatedVisualizationRoute
+  '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/analysis': typeof AnalysisRoute
-  '/ml-readiness': typeof MlReadinessRoute
-  '/preprocessing': typeof PreprocessingRoute
-  '/visualization': typeof VisualizationRoute
+  '/_authenticated/analysis': typeof AuthenticatedAnalysisRoute
+  '/_authenticated/ml-readiness': typeof AuthenticatedMlReadinessRoute
+  '/_authenticated/preprocessing': typeof AuthenticatedPreprocessingRoute
+  '/_authenticated/visualization': typeof AuthenticatedVisualizationRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/analysis' | '/ml-readiness' | '/preprocessing' | '/visualization'
+    '/analysis' | '/ml-readiness' | '/preprocessing' | '/visualization' | '/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/analysis' | '/ml-readiness' | '/preprocessing' | '/visualization'
+  to: '/analysis' | '/ml-readiness' | '/preprocessing' | '/visualization' | '/'
   id:
     | '__root__'
-    | '/'
-    | '/analysis'
-    | '/ml-readiness'
-    | '/preprocessing'
-    | '/visualization'
+    | '/_authenticated/analysis'
+    | '/_authenticated/ml-readiness'
+    | '/_authenticated/preprocessing'
+    | '/_authenticated/visualization'
+    | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AnalysisRoute: typeof AnalysisRoute
-  MlReadinessRoute: typeof MlReadinessRoute
-  PreprocessingRoute: typeof PreprocessingRoute
-  VisualizationRoute: typeof VisualizationRoute
+  AuthenticatedAnalysisRoute: typeof AuthenticatedAnalysisRoute
+  AuthenticatedMlReadinessRoute: typeof AuthenticatedMlReadinessRoute
+  AuthenticatedPreprocessingRoute: typeof AuthenticatedPreprocessingRoute
+  AuthenticatedVisualizationRoute: typeof AuthenticatedVisualizationRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/analysis': {
-      id: '/analysis'
+    '/_authenticated/analysis': {
+      id: '/_authenticated/analysis'
       path: '/analysis'
       fullPath: '/analysis'
-      preLoaderRoute: typeof AnalysisRouteImport
+      preLoaderRoute: typeof AuthenticatedAnalysisRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/ml-readiness': {
-      id: '/ml-readiness'
+    '/_authenticated/ml-readiness': {
+      id: '/_authenticated/ml-readiness'
       path: '/ml-readiness'
       fullPath: '/ml-readiness'
-      preLoaderRoute: typeof MlReadinessRouteImport
+      preLoaderRoute: typeof AuthenticatedMlReadinessRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/preprocessing': {
-      id: '/preprocessing'
+    '/_authenticated/preprocessing': {
+      id: '/_authenticated/preprocessing'
       path: '/preprocessing'
       fullPath: '/preprocessing'
-      preLoaderRoute: typeof PreprocessingRouteImport
+      preLoaderRoute: typeof AuthenticatedPreprocessingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/visualization': {
-      id: '/visualization'
+    '/_authenticated/visualization': {
+      id: '/_authenticated/visualization'
       path: '/visualization'
       fullPath: '/visualization'
-      preLoaderRoute: typeof VisualizationRouteImport
+      preLoaderRoute: typeof AuthenticatedVisualizationRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  AnalysisRoute: AnalysisRoute,
-  MlReadinessRoute: MlReadinessRoute,
-  PreprocessingRoute: PreprocessingRoute,
-  VisualizationRoute: VisualizationRoute,
+  AuthenticatedAnalysisRoute: AuthenticatedAnalysisRoute,
+  AuthenticatedMlReadinessRoute: AuthenticatedMlReadinessRoute,
+  AuthenticatedPreprocessingRoute: AuthenticatedPreprocessingRoute,
+  AuthenticatedVisualizationRoute: AuthenticatedVisualizationRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
