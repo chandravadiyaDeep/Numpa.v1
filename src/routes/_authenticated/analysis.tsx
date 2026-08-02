@@ -79,6 +79,9 @@ const fmt = (v?: number, d = 2) => (typeof v === "number" && Number.isFinite(v) 
 
 function AnalysisPage() {
   const ds = useActiveDataset();
+  const [view, setView] = useState<"core" | "distribution" | "quality">("core");
+  const relationships = useMemo(() => (ds ? strongestRelationships(ds) : []), [ds]);
+
   if (!ds)
     return (
       <PageShell title="Dataset Analysis" subtitle="Automated profiling of your working dataset.">
@@ -92,32 +95,60 @@ function AnalysisPage() {
   const insights = aiInsights(ds);
   const missingTotal = profiles.reduce((a, p) => a + p.missing, 0);
   const numericProfiles = profiles.filter((p) => p.type === "numeric");
+  const outlierTotal = profiles.reduce((a, p) => a + (p.outliers ?? 0), 0);
+  const flagged = profiles.filter((p) => p.constant || p.highCardinality || p.idLike);
 
   const validations = [
     { label: "Header row detected", passed: ds.columns.length > 0 },
     { label: "No empty columns", passed: profiles.every((p) => p.unique > 0) },
     { label: "No duplicate rows", passed: duplicateCount(ds) === 0 },
     { label: "Complete cells", passed: missingTotal === 0 },
-    { label: "Consistent column count", passed: true },
+    { label: "No constant columns", passed: !profiles.some((p) => p.constant) },
+    { label: "No outlier-heavy columns", passed: !profiles.some((p) => (p.outlierPct ?? 0) > 10) },
+    { label: "Cardinality within range", passed: !profiles.some((p) => p.highCardinality) },
     { label: "At least one numeric feature", passed: numericProfiles.length > 0 },
   ];
+
+  const COLUMNS: Record<typeof view, string[]> = {
+    core: ["Column", "Type", "Missing", "Unique", "Mean", "Median", "Min", "Max"],
+    distribution: ["Column", "Std", "Variance", "Skewness", "Kurtosis", "P5", "P95", "IQR"],
+    quality: ["Column", "Unique %", "Mode", "Outliers", "Outlier %", "Range", "Flags"],
+  };
 
   return (
     <PageShell
       title="Dataset Analysis"
       subtitle={`${ds.name} · ${ds.rows.length.toLocaleString()} rows · ${ds.columns.length} columns`}
     >
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Kpi icon={Rows3} label="Rows" value={ds.rows.length.toLocaleString()} hint="Records in the working set" />
-        <Kpi icon={Table2} label="Columns" value={String(ds.columns.length)} hint={`${readiness.numeric} numeric · ${readiness.categorical} categorical`} />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <Kpi icon={Rows3} label="Rows" value={ds.rows.length} hint="Records in the working set" />
+        <Kpi
+          icon={Table2}
+          label="Columns"
+          value={ds.columns.length}
+          hint={`${readiness.numeric} numeric · ${readiness.categorical} categorical`}
+        />
         <Kpi
           icon={AlertTriangle}
           label="Missing cells"
-          value={missingTotal.toLocaleString()}
+          value={missingTotal}
           hint={`${profiles.filter((p) => p.missing > 0).length} affected columns`}
         />
-        <Kpi icon={Gauge} label="Quality score" value={`${quality.score}%`} hint="Completeness · uniqueness · consistency" />
+        <Kpi
+          icon={Fingerprint}
+          label="Outliers"
+          value={outlierTotal}
+          hint={`${profiles.filter((p) => (p.outliers ?? 0) > 0).length} numeric columns affected`}
+        />
+        <Kpi
+          icon={Gauge}
+          label="Quality score"
+          value={quality.score}
+          suffix="%"
+          hint="Completeness · uniqueness · consistency"
+        />
       </div>
+
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <section className="panel p-6 lg:col-span-2">
