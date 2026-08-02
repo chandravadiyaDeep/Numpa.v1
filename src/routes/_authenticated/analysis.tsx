@@ -152,13 +152,30 @@ function AnalysisPage() {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <section className="panel p-6 lg:col-span-2">
-          <h2 className="text-base font-semibold">Column statistics</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Descriptive profile per feature.</p>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold">Column statistics</h2>
+              <p className="mt-1 text-xs text-muted-foreground">Descriptive profile per feature.</p>
+            </div>
+            <div className="flex rounded-xl border bg-secondary/40 p-1">
+              {(["core", "distribution", "quality"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
+                    view === v ? "bg-primary/20 text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="mt-5 -mx-2 overflow-x-auto scroll-slim">
             <table className="w-full min-w-[720px] border-separate border-spacing-0 text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
-                  {["Column", "Type", "Missing", "Unique", "Mean", "Median", "Min", "Max"].map((h) => (
+                  {COLUMNS[view].map((h) => (
                     <th key={h} className="border-b px-2 pb-3 font-medium">
                       {h}
                     </th>
@@ -169,32 +186,74 @@ function AnalysisPage() {
                 {profiles.map((p) => (
                   <tr key={p.name} className="transition-colors hover:bg-secondary/50">
                     <td className="border-b px-2 py-3 font-medium">{p.name}</td>
-                    <td className="border-b px-2 py-3">
-                      <span
-                        className={`rounded-md px-2 py-0.5 text-xs font-medium ${
-                          p.type === "numeric"
-                            ? "bg-primary/15 text-primary"
-                            : "bg-cyan/15 text-cyan"
-                        }`}
-                      >
-                        {p.type}
-                      </span>
-                    </td>
-                    <td className="border-b px-2 py-3 font-mono text-xs text-muted-foreground">
-                      {p.missing} ({p.missingPct.toFixed(1)}%)
-                    </td>
-                    <td className="border-b px-2 py-3 font-mono text-xs text-muted-foreground">{p.unique}</td>
-                    {[p.mean, p.median, p.min, p.max].map((v, i) => (
-                      <td key={i} className="border-b px-2 py-3 font-mono text-xs text-muted-foreground">
-                        {typeof v === "number" ? v.toFixed(2) : "—"}
-                      </td>
-                    ))}
+                    {view === "core" && (
+                      <>
+                        <td className="border-b px-2 py-3">
+                          <span
+                            className={`rounded-md px-2 py-0.5 text-xs font-medium ${
+                              p.type === "numeric"
+                                ? "bg-primary/15 text-primary"
+                                : "bg-cyan/15 text-cyan"
+                            }`}
+                          >
+                            {p.type}
+                          </span>
+                        </td>
+                        <td className="border-b px-2 py-3 font-mono text-xs text-muted-foreground">
+                          {p.missing} ({p.missingPct.toFixed(1)}%)
+                        </td>
+                        <td className="border-b px-2 py-3 font-mono text-xs text-muted-foreground">
+                          {p.unique}
+                        </td>
+                        {[p.mean, p.median, p.min, p.max].map((v, i) => (
+                          <td key={i} className="border-b px-2 py-3 font-mono text-xs text-muted-foreground">
+                            {fmt(v)}
+                          </td>
+                        ))}
+                      </>
+                    )}
+                    {view === "distribution" &&
+                      [p.std, p.variance, p.skewness, p.kurtosis, p.p5, p.p95, p.iqr].map((v, i) => (
+                        <td key={i} className="border-b px-2 py-3 font-mono text-xs text-muted-foreground">
+                          {fmt(v)}
+                        </td>
+                      ))}
+                    {view === "quality" && (
+                      <>
+                        <td className="border-b px-2 py-3 font-mono text-xs text-muted-foreground">
+                          {p.uniquePct.toFixed(1)}%
+                        </td>
+                        <td className="border-b px-2 py-3 font-mono text-xs text-muted-foreground">
+                          {p.mode !== undefined ? String(p.mode) : "—"}
+                        </td>
+                        <td className="border-b px-2 py-3 font-mono text-xs text-muted-foreground">
+                          {p.outliers ?? "—"}
+                        </td>
+                        <td className="border-b px-2 py-3 font-mono text-xs text-muted-foreground">
+                          {typeof p.outlierPct === "number" ? `${p.outlierPct.toFixed(1)}%` : "—"}
+                        </td>
+                        <td className="border-b px-2 py-3 font-mono text-xs text-muted-foreground">
+                          {fmt(p.range)}
+                        </td>
+                        <td className="border-b px-2 py-3">
+                          <div className="flex flex-wrap gap-1">
+                            {p.constant && <Flag tone="destructive">constant</Flag>}
+                            {p.highCardinality && <Flag tone="warning">high cardinality</Flag>}
+                            {p.idLike && <Flag tone="warning">id-like</Flag>}
+                            {!p.constant && !p.highCardinality && !p.idLike && (
+                              <span className="text-xs text-muted-foreground">clean</span>
+                            )}
+                          </div>
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </section>
+
 
         <div className="space-y-6">
           <section className="panel p-6">
