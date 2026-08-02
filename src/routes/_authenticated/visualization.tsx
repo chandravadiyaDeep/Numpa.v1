@@ -188,7 +188,31 @@ function VisualizationPage() {
               </button>
             ))}
           </div>
+
+          {recommendations.length > 0 && (
+            <div className="mt-7 border-t pt-5">
+              <div className="flex items-center gap-2">
+                <Lightbulb className="h-3.5 w-3.5 text-cyan" />
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Suggested
+                </h2>
+              </div>
+              <div className="mt-3 space-y-2">
+                {recommendations.map((r) => (
+                  <button
+                    key={`${r.kind}-${r.x}`}
+                    onClick={() => applyRecommendation(r)}
+                    className="w-full rounded-xl border bg-secondary/40 p-3 text-left transition-colors hover:border-primary/50 hover:bg-secondary"
+                  >
+                    <p className="text-xs font-semibold">{r.kind}</p>
+                    <p className="mt-1 text-[11px] leading-snug text-muted-foreground">{r.reason}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </aside>
+
 
         <section className="panel p-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:max-w-xl">
