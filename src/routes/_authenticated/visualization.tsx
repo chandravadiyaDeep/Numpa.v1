@@ -49,14 +49,69 @@ export const Route = createFileRoute("/_authenticated/visualization")({
 
 const CHARTS = [
   "Histogram",
+  "Bar Chart",
   "Scatter Plot",
   "Line Chart",
   "Pie Chart",
+  "Donut Chart",
   "Box Plot",
   "Correlation Heatmap",
   "Distribution Plot",
 ] as const;
 type ChartKind = (typeof CHARTS)[number];
+
+interface Recommendation {
+  kind: ChartKind;
+  x: string;
+  y?: string;
+  reason: string;
+}
+
+/** Suggest charts that suit the shape of the current dataset. */
+function recommendCharts(profiles: ReturnType<typeof profileDataset>): Recommendation[] {
+  const nums = profiles.filter((p) => p.type === "numeric" && !p.constant);
+  const cats = profiles.filter((p) => p.type === "categorical" && !p.highCardinality && !p.idLike);
+  const out: Recommendation[] = [];
+
+  const skewed = nums.filter((p) => Math.abs(p.skewness ?? 0) > 1)[0];
+  if (skewed)
+    out.push({
+      kind: "Histogram",
+      x: skewed.name,
+      reason: `"${skewed.name}" is skewed (${(skewed.skewness ?? 0).toFixed(2)}) — inspect its shape.`,
+    });
+  if (nums.length >= 2)
+    out.push({
+      kind: "Scatter Plot",
+      x: nums[0].name,
+      y: nums[1].name,
+      reason: `Compare "${nums[0].name}" against "${nums[1].name}" for a relationship.`,
+    });
+  if (nums.length >= 3)
+    out.push({
+      kind: "Correlation Heatmap",
+      x: nums[0].name,
+      reason: `${nums.length} numeric features — check for redundant correlations.`,
+    });
+  const lowCard = cats.filter((p) => p.unique <= 10)[0];
+  if (lowCard)
+    out.push({
+      kind: "Donut Chart",
+      x: lowCard.name,
+      reason: `"${lowCard.name}" has ${lowCard.unique} levels — good for a share breakdown.`,
+    });
+  const outlierCol = nums.filter((p) => (p.outlierPct ?? 0) > 2)[0];
+  if (outlierCol)
+    out.push({
+      kind: "Box Plot",
+      x: outlierCol.name,
+      reason: `"${outlierCol.name}" holds ${(outlierCol.outlierPct ?? 0).toFixed(1)}% outliers.`,
+    });
+  if (!out.length && nums[0])
+    out.push({ kind: "Distribution Plot", x: nums[0].name, reason: "Start with a distribution overview." });
+  return out.slice(0, 4);
+}
+
 
 const axisProps = {
   stroke: "var(--muted-foreground)",
