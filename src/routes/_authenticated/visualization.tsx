@@ -137,6 +137,7 @@ function VisualizationPage() {
   const [y, setY] = useState("");
 
   const profiles = useMemo(() => (ds ? profileDataset(ds) : []), [ds]);
+  const recommendations = useMemo(() => recommendCharts(profiles), [profiles]);
   const numeric = profiles.filter((p) => p.type === "numeric").map((p) => p.name);
   const categorical = profiles.filter((p) => p.type === "categorical").map((p) => p.name);
   const all = profiles.map((p) => p.name);
@@ -148,12 +149,19 @@ function VisualizationPage() {
       </PageShell>
     );
 
-  const needsCategorical = kind === "Pie Chart";
+  const needsCategorical = kind === "Pie Chart" || kind === "Donut Chart" || kind === "Bar Chart";
   const xOptions = needsCategorical ? (categorical.length ? categorical : all) : numeric.length ? numeric : all;
   const xCol = x && xOptions.includes(x) ? x : (xOptions[0] ?? "");
   const yOptions = numeric.filter((c) => c !== xCol);
   const yCol = y && yOptions.includes(y) ? y : (yOptions[0] ?? "");
   const showY = kind === "Scatter Plot" || kind === "Line Chart";
+
+  const applyRecommendation = (r: Recommendation) => {
+    setKind(r.kind);
+    setX(r.x);
+    if (r.y) setY(r.y);
+  };
+
 
   return (
     <PageShell
