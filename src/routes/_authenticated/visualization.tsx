@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -18,8 +18,16 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Lightbulb } from "lucide-react";
+import { Download, Lightbulb } from "lucide-react";
 import { PageShell } from "@/components/uda/PageShell";
+import { ExportMenu } from "@/components/uda/ExportMenu";
+import {
+  DATA_FORMATS,
+  baseName,
+  exportDataset,
+  exportElementImage,
+  exportElementPdf,
+} from "@/lib/export";
 
 import { useActiveDataset } from "@/lib/studio-store";
 import {
@@ -135,6 +143,7 @@ const tooltipStyle = {
 function VisualizationPage() {
   const ds = useActiveDataset();
   const [kind, setKind] = useState<ChartKind>("Histogram");
+  const captureRef = useRef<HTMLDivElement>(null);
   const [x, setX] = useState("");
   const [y, setY] = useState("");
 
@@ -158,6 +167,9 @@ function VisualizationPage() {
   const yCol = y && yOptions.includes(y) ? y : (yOptions[0] ?? "");
   const showY = kind === "Scatter Plot" || kind === "Line Chart";
 
+  const chartName = `${kind.toLowerCase().replace(/\s+/g, "-")}_${baseName(ds)}`;
+  const chartSubtitle = `${ds.name} — ${xCol}${showY && yCol ? ` vs ${yCol}` : ""} · ${ds.rows.length.toLocaleString()} rows`;
+
   const applyRecommendation = (r: Recommendation) => {
     setKind(r.kind);
     setX(r.x);
@@ -169,6 +181,55 @@ function VisualizationPage() {
     <PageShell
       title="Visualization"
       subtitle={`Exploring ${ds.name} — ${ds.rows.length.toLocaleString()} rows`}
+      actions={
+        <ExportMenu
+          label="Export"
+          icon={<Download className="h-4 w-4 text-cyan" />}
+          groups={[
+            {
+              label: "Current chart",
+              options: [
+                {
+                  id: "png",
+                  label: "Chart image",
+                  hint: "PNG",
+                  onSelect: () =>
+                    captureRef.current
+                      ? exportElementImage(captureRef.current, chartName, "png")
+                      : undefined,
+                },
+                {
+                  id: "jpeg",
+                  label: "Chart image",
+                  hint: "JPEG",
+                  onSelect: () =>
+                    captureRef.current
+                      ? exportElementImage(captureRef.current, chartName, "jpeg")
+                      : undefined,
+                },
+                {
+                  id: "chart-pdf",
+                  label: "Chart document",
+                  hint: "PDF",
+                  onSelect: () =>
+                    captureRef.current
+                      ? exportElementPdf(captureRef.current, chartName, kind, chartSubtitle)
+                      : undefined,
+                },
+              ],
+            },
+            {
+              label: "Visualization dataset",
+              options: DATA_FORMATS.map((f) => ({
+                id: f.id,
+                label: f.label,
+                hint: f.hint,
+                onSelect: () => exportDataset(ds, f.id, "visualized"),
+              })),
+            },
+          ]}
+        />
+      }
     >
       <div className="grid gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
         <aside className="panel h-fit p-5">
@@ -252,7 +313,7 @@ function VisualizationPage() {
             )}
           </div>
 
-          <div className="mt-8 h-[440px] w-full">
+          <div ref={captureRef} className="mt-8 h-[440px] w-full bg-background p-2">
             <ChartCanvas kind={kind} xCol={xCol} yCol={yCol} numeric={numeric} />
           </div>
         </section>
