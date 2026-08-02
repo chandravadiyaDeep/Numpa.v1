@@ -76,6 +76,19 @@ function Kpi({
 
 const fmt = (v?: number, d = 2) => (typeof v === "number" && Number.isFinite(v) ? v.toFixed(d) : "—");
 
+function Flag({ tone, children }: { tone: "warning" | "destructive"; children: React.ReactNode }) {
+  return (
+    <span
+      className={`rounded-md px-2 py-0.5 text-[10px] font-medium ${
+        tone === "warning" ? "bg-warning/15 text-warning" : "bg-destructive/15 text-destructive"
+      }`}
+    >
+      {children}
+    </span>
+  );
+}
+
+
 
 function AnalysisPage() {
   const ds = useActiveDataset();
