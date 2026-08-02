@@ -6,9 +6,14 @@ interface State {
   dataset: Dataset | null;
   steps: Step[];
   processed: Dataset | null;
+  target: string | null;
+  past: Step[][];
+  future: Step[][];
 }
 
-let state: State = { dataset: null, steps: [], processed: null };
+const empty: State = { dataset: null, steps: [], processed: null, target: null, past: [], future: [] };
+
+let state: State = empty;
 const listeners = new Set<() => void>();
 
 const emit = () => listeners.forEach((l) => l());
@@ -17,21 +22,28 @@ const set = (patch: Partial<State>) => {
   emit();
 };
 
+/** Apply a steps mutation while recording it on the undo stack. */
+const commit = (steps: Step[]) =>
+  set({ steps, processed: null, past: [...state.past, state.steps], future: [] });
+
 export const store = {
   setDataset(dataset: Dataset) {
-    set({ dataset, steps: [], processed: null });
+    set({ ...empty, dataset });
   },
   clear() {
-    set({ dataset: null, steps: [], processed: null });
+    set({ ...empty });
+  },
+  setTarget(target: string | null) {
+    set({ target });
   },
   addStep(step: Step) {
-    set({ steps: [...state.steps, step], processed: null });
+    commit([...state.steps, step]);
   },
   updateStep(id: string, patch: Partial<Step>) {
-    set({ steps: state.steps.map((s) => (s.id === id ? { ...s, ...patch } : s)), processed: null });
+    commit(state.steps.map((s) => (s.id === id ? { ...s, ...patch } : s)));
   },
   removeStep(id: string) {
-    set({ steps: state.steps.filter((s) => s.id !== id), processed: null });
+    commit(state.steps.filter((s) => s.id !== id));
   },
   move(id: string, dir: -1 | 1) {
     const steps = [...state.steps];
@@ -39,7 +51,23 @@ export const store = {
     const j = i + dir;
     if (i < 0 || j < 0 || j >= steps.length) return;
     [steps[i], steps[j]] = [steps[j], steps[i]];
-    set({ steps, processed: null });
+    commit(steps);
+  },
+  undo() {
+    if (!state.past.length) return;
+    const past = [...state.past];
+    const steps = past.pop()!;
+    set({ steps, past, future: [state.steps, ...state.future], processed: null });
+  },
+  redo() {
+    if (!state.future.length) return;
+    const [steps, ...future] = state.future;
+    set({ steps, future, past: [...state.past, state.steps], processed: null });
+  },
+  /** Discard the whole pipeline and return to the raw upload. */
+  reset() {
+    if (!state.steps.length && !state.processed) return;
+    set({ steps: [], processed: null, past: [...state.past, state.steps], future: [] });
   },
   run() {
     if (!state.dataset) return;
@@ -78,15 +106,16 @@ export function hydrateStudio() {
   try {
     const raw = window.sessionStorage.getItem(KEY);
     if (raw) {
-      const parsed = JSON.parse(raw) as State;
-      if (parsed?.dataset) set(parsed);
+      const parsed = JSON.parse(raw) as Partial<State>;
+      if (parsed?.dataset) set({ ...empty, ...parsed, past: [], future: [] });
     }
   } catch {
     /* ignore corrupt state */
   }
   listeners.add(() => {
     try {
-      window.sessionStorage.setItem(KEY, JSON.stringify(state));
+      const { dataset, steps, processed, target } = state;
+      window.sessionStorage.setItem(KEY, JSON.stringify({ dataset, steps, processed, target }));
     } catch {
       /* quota exceeded — keep working in memory */
     }

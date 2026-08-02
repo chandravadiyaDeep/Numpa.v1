@@ -1,9 +1,12 @@
 import {
   Braces,
+  CaseSensitive,
   Copy,
   Filter,
   Ruler,
+  Sigma,
   Sparkle,
+  Tag,
   Target,
   Wrench,
   type LucideIcon,
@@ -18,7 +21,11 @@ const MAP: Record<OperationId, LucideIcon> = {
   duplicates: Copy,
   "feature-selection": Filter,
   datatype: Wrench,
+  text: CaseSensitive,
+  rounding: Sigma,
+  rename: Tag,
 };
+
 
 export function OpIcon({ op, className = "h-4 w-4" }: { op: OperationId; className?: string }) {
   const Icon = MAP[op];
