@@ -6,11 +6,11 @@ The application is NOT a simple dashboard.
 
 It is a professional data preparation and analysis platform similar in workflow to Power Query, KNIME, Alteryx, and Orange Data Mining, but much simpler and focused on CSV datasets.
 
-======================================================
+================================
 
 DESIGN STYLE
 
-======================================================
+=================================
 
 • Modern SaaS Product
 
