@@ -358,14 +358,41 @@ function ChartCanvas({
     );
   }
 
-  if (kind === "Pie Chart") {
+  if (kind === "Bar Chart") {
+    const data = categoryCounts(ds, xCol, 12);
+    if (!data.length) return <Empty />;
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} layout="vertical" margin={{ left: 24 }}>
+          <CartesianGrid horizontal={false} stroke="var(--border)" />
+          <XAxis type="number" {...axisProps} />
+          <YAxis type="category" dataKey="name" width={110} {...axisProps} />
+          <Tooltip cursor={{ fill: "var(--secondary)" }} {...tooltipStyle} />
+          <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+            {data.map((_, i) => (
+              <Cell key={i} fill={palette[i % palette.length]} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  if (kind === "Pie Chart" || kind === "Donut Chart") {
     const data = categoryCounts(ds, xCol);
     if (!data.length) return <Empty />;
     return (
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Tooltip {...tooltipStyle} />
-          <Pie data={data} dataKey="value" nameKey="name" innerRadius={80} outerRadius={140} paddingAngle={3}>
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={kind === "Donut Chart" ? 80 : 0}
+            outerRadius={140}
+            paddingAngle={kind === "Donut Chart" ? 3 : 1}
+          >
             {data.map((_, i) => (
               <Cell key={i} fill={palette[i % palette.length]} stroke="var(--background)" strokeWidth={2} />
             ))}
@@ -374,6 +401,7 @@ function ChartCanvas({
       </ResponsiveContainer>
     );
   }
+
 
   if (kind === "Box Plot") {
     const cols = numeric.slice(0, 6);
