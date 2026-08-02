@@ -18,7 +18,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { Lightbulb } from "lucide-react";
 import { PageShell } from "@/components/uda/PageShell";
+
 import { useActiveDataset } from "@/lib/studio-store";
 import {
   categoryCounts,
@@ -49,14 +51,69 @@ export const Route = createFileRoute("/_authenticated/visualization")({
 
 const CHARTS = [
   "Histogram",
+  "Bar Chart",
   "Scatter Plot",
   "Line Chart",
   "Pie Chart",
+  "Donut Chart",
   "Box Plot",
   "Correlation Heatmap",
   "Distribution Plot",
 ] as const;
 type ChartKind = (typeof CHARTS)[number];
+
+interface Recommendation {
+  kind: ChartKind;
+  x: string;
+  y?: string;
+  reason: string;
+}
+
+/** Suggest charts that suit the shape of the current dataset. */
+function recommendCharts(profiles: ReturnType<typeof profileDataset>): Recommendation[] {
+  const nums = profiles.filter((p) => p.type === "numeric" && !p.constant);
+  const cats = profiles.filter((p) => p.type === "categorical" && !p.highCardinality && !p.idLike);
+  const out: Recommendation[] = [];
+
+  const skewed = nums.filter((p) => Math.abs(p.skewness ?? 0) > 1)[0];
+  if (skewed)
+    out.push({
+      kind: "Histogram",
+      x: skewed.name,
+      reason: `"${skewed.name}" is skewed (${(skewed.skewness ?? 0).toFixed(2)}) — inspect its shape.`,
+    });
+  if (nums.length >= 2)
+    out.push({
+      kind: "Scatter Plot",
+      x: nums[0].name,
+      y: nums[1].name,
+      reason: `Compare "${nums[0].name}" against "${nums[1].name}" for a relationship.`,
+    });
+  if (nums.length >= 3)
+    out.push({
+      kind: "Correlation Heatmap",
+      x: nums[0].name,
+      reason: `${nums.length} numeric features — check for redundant correlations.`,
+    });
+  const lowCard = cats.filter((p) => p.unique <= 10)[0];
+  if (lowCard)
+    out.push({
+      kind: "Donut Chart",
+      x: lowCard.name,
+      reason: `"${lowCard.name}" has ${lowCard.unique} levels — good for a share breakdown.`,
+    });
+  const outlierCol = nums.filter((p) => (p.outlierPct ?? 0) > 2)[0];
+  if (outlierCol)
+    out.push({
+      kind: "Box Plot",
+      x: outlierCol.name,
+      reason: `"${outlierCol.name}" holds ${(outlierCol.outlierPct ?? 0).toFixed(1)}% outliers.`,
+    });
+  if (!out.length && nums[0])
+    out.push({ kind: "Distribution Plot", x: nums[0].name, reason: "Start with a distribution overview." });
+  return out.slice(0, 4);
+}
+
 
 const axisProps = {
   stroke: "var(--muted-foreground)",
@@ -82,6 +139,7 @@ function VisualizationPage() {
   const [y, setY] = useState("");
 
   const profiles = useMemo(() => (ds ? profileDataset(ds) : []), [ds]);
+  const recommendations = useMemo(() => recommendCharts(profiles), [profiles]);
   const numeric = profiles.filter((p) => p.type === "numeric").map((p) => p.name);
   const categorical = profiles.filter((p) => p.type === "categorical").map((p) => p.name);
   const all = profiles.map((p) => p.name);
@@ -93,12 +151,19 @@ function VisualizationPage() {
       </PageShell>
     );
 
-  const needsCategorical = kind === "Pie Chart";
+  const needsCategorical = kind === "Pie Chart" || kind === "Donut Chart" || kind === "Bar Chart";
   const xOptions = needsCategorical ? (categorical.length ? categorical : all) : numeric.length ? numeric : all;
   const xCol = x && xOptions.includes(x) ? x : (xOptions[0] ?? "");
   const yOptions = numeric.filter((c) => c !== xCol);
   const yCol = y && yOptions.includes(y) ? y : (yOptions[0] ?? "");
   const showY = kind === "Scatter Plot" || kind === "Line Chart";
+
+  const applyRecommendation = (r: Recommendation) => {
+    setKind(r.kind);
+    setX(r.x);
+    if (r.y) setY(r.y);
+  };
+
 
   return (
     <PageShell
@@ -125,7 +190,31 @@ function VisualizationPage() {
               </button>
             ))}
           </div>
+
+          {recommendations.length > 0 && (
+            <div className="mt-7 border-t pt-5">
+              <div className="flex items-center gap-2">
+                <Lightbulb className="h-3.5 w-3.5 text-cyan" />
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Suggested
+                </h2>
+              </div>
+              <div className="mt-3 space-y-2">
+                {recommendations.map((r) => (
+                  <button
+                    key={`${r.kind}-${r.x}`}
+                    onClick={() => applyRecommendation(r)}
+                    className="w-full rounded-xl border bg-secondary/40 p-3 text-left transition-colors hover:border-primary/50 hover:bg-secondary"
+                  >
+                    <p className="text-xs font-semibold">{r.kind}</p>
+                    <p className="mt-1 text-[11px] leading-snug text-muted-foreground">{r.reason}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </aside>
+
 
         <section className="panel p-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:max-w-xl">
@@ -269,14 +358,41 @@ function ChartCanvas({
     );
   }
 
-  if (kind === "Pie Chart") {
+  if (kind === "Bar Chart") {
+    const data = categoryCounts(ds, xCol, 12);
+    if (!data.length) return <Empty />;
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} layout="vertical" margin={{ left: 24 }}>
+          <CartesianGrid horizontal={false} stroke="var(--border)" />
+          <XAxis type="number" {...axisProps} />
+          <YAxis type="category" dataKey="name" width={110} {...axisProps} />
+          <Tooltip cursor={{ fill: "var(--secondary)" }} {...tooltipStyle} />
+          <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+            {data.map((_, i) => (
+              <Cell key={i} fill={palette[i % palette.length]} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  if (kind === "Pie Chart" || kind === "Donut Chart") {
     const data = categoryCounts(ds, xCol);
     if (!data.length) return <Empty />;
     return (
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Tooltip {...tooltipStyle} />
-          <Pie data={data} dataKey="value" nameKey="name" innerRadius={80} outerRadius={140} paddingAngle={3}>
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={kind === "Donut Chart" ? 80 : 0}
+            outerRadius={140}
+            paddingAngle={kind === "Donut Chart" ? 3 : 1}
+          >
             {data.map((_, i) => (
               <Cell key={i} fill={palette[i % palette.length]} stroke="var(--background)" strokeWidth={2} />
             ))}
@@ -285,6 +401,7 @@ function ChartCanvas({
       </ResponsiveContainer>
     );
   }
+
 
   if (kind === "Box Plot") {
     const cols = numeric.slice(0, 6);

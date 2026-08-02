@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useMemo } from "react";
 import {
   ArrowRight,
   BarChart3,
@@ -8,27 +8,33 @@ import {
   Download,
   FileUp,
   Layers,
+  Sparkles,
   Wand2,
 } from "lucide-react";
 import { TopNav } from "@/components/uda/TopNav";
-import { parseCsv } from "@/lib/dataset";
+import { AnimatedNumber } from "@/components/uda/AnimatedNumber";
+import { Uploader } from "@/components/uda/Uploader";
+import { parseCsv, qualityScore } from "@/lib/dataset";
+import { healthSummary, readinessReport } from "@/lib/insights";
 import { store, useStudio } from "@/lib/studio-store";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
-      { title: "UDA — AI Data Preparation Studio for CSV" },
+      { title: "UDA — AI Data Preparation Studio for CSV, Excel & JSON" },
       {
         name: "description",
         content:
-          "Universal Data Analyzer: upload a CSV, profile it, build a preprocessing pipeline, visualize it and export a model-ready dataset.",
+          "Universal Data Analyzer: upload CSV, XLSX or JSON, profile it, build a preprocessing pipeline, visualize it and export a model-ready dataset.",
       },
-      { property: "og:title", content: "UDA — AI Data Preparation Studio for CSV" },
+      { property: "og:title", content: "UDA — AI Data Preparation Studio" },
       {
         property: "og:description",
         content:
-          "Universal Data Analyzer: upload a CSV, profile it, build a preprocessing pipeline, visualize it and export a model-ready dataset.",
+          "Profile, clean, visualize and score any CSV, Excel or JSON dataset — entirely in your browser.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Index,
@@ -87,142 +93,200 @@ const SAMPLE = `passenger,age,sex,fare,class,survived
 50,18,female,17.8,3,0`;
 
 const FLOW = [
-  { icon: FileUp, label: "Upload CSV", copy: "Parsed in the browser" },
+  { icon: FileUp, label: "Upload", copy: "CSV · XLSX · JSON" },
   { icon: Braces, label: "Analysis", copy: "Profiles & validation" },
   { icon: Layers, label: "Preprocessing", copy: "Composable pipeline" },
-  { icon: BarChart3, label: "Visualization", copy: "Seven chart types" },
-  { icon: Cpu, label: "ML Readiness", copy: "Gate before training" },
-  { icon: Download, label: "Export", copy: "Clean CSV out" },
+  { icon: BarChart3, label: "Visualization", copy: "Nine chart types" },
+  { icon: Cpu, label: "ML Readiness", copy: "Scored gate" },
+  { icon: Download, label: "Export", copy: "Clean file out" },
 ];
 
 function Index() {
-  const { dataset } = useStudio();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [drag, setDrag] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = async (file: File) => {
-    setError(null);
-    const text = await file.text();
-    const ds = parseCsv(text, file.name);
-    if (!ds.columns.length || !ds.rows.length) {
-      setError("That file didn't contain any parsable rows.");
-      return;
-    }
-    store.setDataset(ds);
-  };
+  const { dataset, steps, processed } = useStudio();
+  const demo = useMemo(() => parseCsv(SAMPLE, "passengers_sample.csv"), []);
+  const active = processed ?? dataset ?? demo;
+  const summary = useMemo(() => healthSummary(active), [active]);
+  const readiness = useMemo(() => readinessReport(active), [active]);
+  const quality = useMemo(() => qualityScore(active), [active]);
+  const live = Boolean(dataset);
 
   return (
     <div className="min-h-screen bg-background">
       <TopNav />
       <main className="ambient">
-        <section className="mx-auto max-w-[1200px] px-5 py-16 lg:px-8 lg:py-24">
-          <div className="relative z-10 mx-auto max-w-2xl text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border bg-secondary/60 px-3.5 py-1.5 text-xs font-medium text-muted-foreground">
-              <Wand2 className="h-3.5 w-3.5 text-cyan" />
-              AI-assisted data preparation
-            </span>
-            <h1 className="mt-6 text-4xl font-bold leading-[1.08] lg:text-6xl">
-              The <span className="text-gradient">data preparation</span> studio for CSV
-              workflows
-            </h1>
-            <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-muted-foreground">
-              Profile a dataset, compose a reproducible cleaning pipeline, inspect distributions
-              and export a model-ready file — without writing a line of code.
-            </p>
-          </div>
-
-          <div className="relative z-10 mx-auto mt-12 max-w-3xl">
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDrag(true);
-              }}
-              onDragLeave={() => setDrag(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDrag(false);
-                const file = e.dataTransfer.files?.[0];
-                if (file) void load(file);
-              }}
-              className={`panel flex flex-col items-center gap-5 px-6 py-14 text-center transition-colors ${
-                drag ? "border-primary bg-secondary/50" : ""
-              }`}
-            >
-              <span className="grid h-16 w-16 place-items-center rounded-2xl brand-gradient shadow-[0_16px_40px_-18px] shadow-primary">
-                <FileUp className="h-7 w-7 text-primary-foreground" />
+        <section className="mx-auto max-w-[1400px] px-5 py-10 lg:px-8 lg:py-14">
+          {/* Intro + upload action */}
+          <div className="relative z-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+            <div className="min-w-0">
+              <span className="inline-flex items-center gap-2 rounded-full border bg-secondary/60 px-3.5 py-1.5 text-xs font-medium text-muted-foreground">
+                <Wand2 className="h-3.5 w-3.5 text-cyan" />
+                {live ? "Workspace active" : "Live preview — sample dataset"}
               </span>
-              <div>
-                <h2 className="text-lg font-semibold">Drop your CSV here</h2>
-                <p className="mt-1.5 text-sm text-muted-foreground">
-                  Everything runs locally in your browser. Nothing is uploaded.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                <button
-                  onClick={() => inputRef.current?.click()}
-                  className="inline-flex h-11 items-center rounded-xl brand-gradient px-6 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-                >
-                  Browse files
-                </button>
-                <button
-                  onClick={() => store.setDataset(parseCsv(SAMPLE, "passengers_sample.csv"))}
-                  className="inline-flex h-11 items-center rounded-xl border bg-secondary/60 px-6 text-sm font-medium transition-colors hover:bg-secondary"
-                >
-                  Use sample dataset
-                </button>
-              </div>
-              <input
-                ref={inputRef}
-                type="file"
-                accept=".csv,text/csv"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) void load(file);
-                }}
-              />
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              <h1 className="mt-5 text-3xl font-bold leading-[1.1] lg:text-5xl">
+                Your <span className="text-gradient">data preparation</span> workspace
+              </h1>
+              <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground lg:text-base">
+                {live
+                  ? `${active.name} is loaded. Profile it, compose a cleaning pipeline, explore charts and score it for training.`
+                  : "Everything below is running on a live sample. Upload a CSV, Excel or JSON file to swap in your own data — nothing leaves your browser."}
+              </p>
             </div>
-
-            {dataset && (
-              <div className="panel lift mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 p-5">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{dataset.name}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {dataset.rows.length.toLocaleString()} rows · {dataset.columns.length} columns
-                    loaded
-                  </p>
-                </div>
-                <Link
-                  to="/analysis"
-                  className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-                >
-                  Start analysis
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            )}
+            <Uploader label={live ? "Upload New Dataset" : "Upload Dataset"} />
           </div>
-        </section>
 
-        <section className="mx-auto max-w-[1400px] px-5 pb-24 lg:px-8">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          {/* Animated pipeline */}
+          <div className="relative z-10 mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {FLOW.map((step, i) => (
-              <div key={step.label} className="panel lift p-5">
+              <div
+                key={step.label}
+                className="panel lift group relative overflow-hidden p-5 transition-transform duration-200 hover:-translate-y-1"
+                style={{ animation: `fade-in 480ms ease-out ${i * 70}ms both` }}
+              >
                 <div className="flex items-center justify-between">
-                  <step.icon className="h-5 w-5 text-cyan" />
-                  <span className="font-mono text-xs text-muted-foreground">
-                    0{i + 1}
-                  </span>
+                  <step.icon className="h-5 w-5 text-cyan transition-transform duration-200 group-hover:scale-110" />
+                  <span className="font-mono text-xs text-muted-foreground">0{i + 1}</span>
                 </div>
                 <p className="mt-6 text-sm font-semibold">{step.label}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{step.copy}</p>
+                <span
+                  className="absolute bottom-0 left-0 h-0.5 brand-gradient transition-[width] duration-700"
+                  style={{ width: `${((i + 1) / FLOW.length) * 100}%` }}
+                />
               </div>
             ))}
           </div>
+
+          {/* Live statistics */}
+          <div className="relative z-10 mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard label="Rows" value={summary.rows} hint={`${summary.columns} columns detected`} />
+            <StatCard
+              label="Data quality"
+              value={quality.score}
+              suffix="%"
+              hint={`${summary.missing.toLocaleString()} missing cells`}
+            />
+            <StatCard
+              label="ML readiness"
+              value={readiness.score}
+              suffix="%"
+              hint={`${readiness.checks.filter((c) => c.status === "pass").length}/${readiness.checks.length} checks passing`}
+            />
+            <StatCard
+              label="Pipeline steps"
+              value={steps.length}
+              hint={processed ? "Processed copy active" : steps.length ? "Pending run" : "Raw dataset"}
+            />
+          </div>
+
+          {/* Insight cards + entry points */}
+          <div className="relative z-10 mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+            <section className="panel p-6">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-cyan" />
+                <h2 className="text-base font-semibold">
+                  {live ? "Recommended next actions" : "What UDA finds in this sample"}
+                </h2>
+              </div>
+              <div className="mt-5 grid gap-3 md:grid-cols-2">
+                {(readiness.actions.length
+                  ? readiness.actions
+                  : ["This dataset passes every structural check and can go straight into training."]
+                )
+                  .slice(0, 6)
+                  .map((a) => (
+                    <p
+                      key={a}
+                      className="rounded-xl border bg-secondary/40 p-4 text-sm leading-relaxed text-muted-foreground transition-colors hover:bg-secondary/60"
+                    >
+                      {a}
+                    </p>
+                  ))}
+              </div>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {readiness.categories.map((c) => (
+                  <span
+                    key={c.name}
+                    className="rounded-lg border px-3 py-1.5 text-xs font-medium text-muted-foreground"
+                  >
+                    {c.name}
+                    <span className="ml-2 font-mono text-foreground">{c.score}%</span>
+                  </span>
+                ))}
+              </div>
+            </section>
+
+            <aside className="panel flex flex-col gap-4 p-6">
+              <h2 className="text-base font-semibold">
+                {live ? "Continue working" : "Start in seconds"}
+              </h2>
+              {live ? (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    {active.name} · {active.rows.length.toLocaleString()} rows ·{" "}
+                    {active.columns.length} columns
+                  </p>
+                  <Link
+                    to="/analysis"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl brand-gradient text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                  >
+                    Open Analysis
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <Link
+                    to="/preprocessing"
+                    className="inline-flex h-11 items-center justify-center rounded-xl border bg-secondary/60 text-sm font-medium transition-colors hover:bg-secondary"
+                  >
+                    Preprocessing Studio
+                  </Link>
+                  <Link
+                    to="/ml-readiness"
+                    className="inline-flex h-11 items-center justify-center rounded-xl border bg-secondary/60 text-sm font-medium transition-colors hover:bg-secondary"
+                  >
+                    ML Readiness
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Load the sample workspace to explore every module, or upload your own file.
+                  </p>
+                  <button
+                    onClick={() => store.setDataset(parseCsv(SAMPLE, "passengers_sample.csv"))}
+                    className="inline-flex h-11 items-center justify-center rounded-xl brand-gradient text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                  >
+                    Use sample dataset
+                  </button>
+                  <Uploader variant="dropzone" label="Browse files" />
+                </>
+              )}
+            </aside>
+          </div>
         </section>
       </main>
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  hint,
+  suffix = "",
+}: {
+  label: string;
+  value: number;
+  hint: string;
+  suffix?: string;
+}) {
+  return (
+    <div className="panel lift p-6 transition-transform duration-200 hover:-translate-y-0.5">
+      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+      <AnimatedNumber
+        value={value}
+        suffix={suffix}
+        className="mt-4 block font-display text-3xl font-bold"
+      />
+      <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
     </div>
   );
 }

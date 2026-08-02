@@ -7,12 +7,16 @@ import {
   Pencil,
   Play,
   Plus,
+  Redo2,
+  RotateCcw,
   Trash2,
+  Undo2,
 } from "lucide-react";
 import { PageShell } from "@/components/uda/PageShell";
 import { OpIcon } from "@/components/uda/OpIcon";
 import { store, useStudio } from "@/lib/studio-store";
 import {
+  METHODS_WITH_VALUE,
   OPERATIONS,
   methodLabel,
   opMeta,
@@ -20,6 +24,7 @@ import {
   toCsv,
   type OperationId,
 } from "@/lib/dataset";
+
 
 export const Route = createFileRoute("/_authenticated/preprocessing")({
   head: () => ({
@@ -40,11 +45,19 @@ export const Route = createFileRoute("/_authenticated/preprocessing")({
   component: PreprocessingPage,
 });
 
+const VALUE_HINT: Record<string, { label: string; placeholder: string }> = {
+  custom: { label: "Fill value", placeholder: "e.g. unknown or 0" },
+  replace: { label: "Find => replace", placeholder: "old => new" },
+  rename: { label: "New column name", placeholder: "e.g. fare_amount" },
+  "clip-custom": { label: "Maximum value", placeholder: "e.g. 100" },
+};
+
 function PreprocessingPage() {
-  const { dataset, steps, processed } = useStudio();
+  const { dataset, steps, processed, past, future } = useStudio();
   const [op, setOp] = useState<OperationId>("missing");
   const [column, setColumn] = useState("");
   const [method, setMethod] = useState("median");
+  const [value, setValue] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const meta = opMeta(op);
@@ -58,28 +71,34 @@ function PreprocessingPage() {
 
   const activeColumn = column && columns.includes(column) ? column : (columns[0] ?? "");
   const activeMethod = meta.methods.some((m) => m.value === method) ? method : meta.methods[0].value;
+  const hint = VALUE_HINT[activeMethod];
+  const needsValue = METHODS_WITH_VALUE.has(activeMethod);
 
   const selectOp = (id: OperationId) => {
     setOp(id);
     setColumn("");
     setMethod(opMeta(id).methods[0].value);
+    setValue("");
     setEditingId(null);
   };
 
   const submit = () => {
-    if (!activeColumn) return;
+    if (!activeColumn || (needsValue && !value.trim())) return;
+    const patch = {
+      op,
+      column: activeColumn,
+      method: activeMethod,
+      value: needsValue ? value.trim() : undefined,
+    };
     if (editingId) {
-      store.updateStep(editingId, { op, column: activeColumn, method: activeMethod });
+      store.updateStep(editingId, patch);
       setEditingId(null);
     } else {
-      store.addStep({
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        op,
-        column: activeColumn,
-        method: activeMethod,
-      });
+      store.addStep({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, ...patch });
     }
+    setValue("");
   };
+
 
   const download = () => {
     if (!processed) return;
@@ -172,14 +191,29 @@ function PreprocessingPage() {
             </label>
           </div>
 
+          {needsValue && (
+            <label className="mt-5 block animate-in fade-in slide-in-from-top-1 duration-200">
+              <span className="text-xs font-medium text-muted-foreground">
+                {hint?.label ?? "Value"}
+              </span>
+              <input
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder={hint?.placeholder}
+                className="mt-2 h-11 w-full rounded-xl border bg-secondary/50 px-3 text-sm outline-none transition-colors focus:border-primary"
+              />
+            </label>
+          )}
+
           <button
             onClick={submit}
-            disabled={!activeColumn}
-            className="mt-8 inline-flex h-11 items-center gap-2 rounded-xl brand-gradient px-6 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"
+            disabled={!activeColumn || (needsValue && !value.trim())}
+            className="mt-8 inline-flex h-11 items-center gap-2 rounded-xl brand-gradient px-6 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
           >
             <Plus className="h-4 w-4" />
             {editingId ? "Save Step" : "Add Step"}
           </button>
+
 
           {editingId && (
             <button
@@ -193,14 +227,38 @@ function PreprocessingPage() {
 
         {/* RIGHT — pipeline */}
         <aside className="panel h-fit p-5">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Pipeline
             </h2>
-            <span className="rounded-full bg-secondary px-2.5 py-1 font-mono text-xs text-muted-foreground">
-              {steps.length}
-            </span>
+            <div className="flex items-center gap-1.5">
+              {[
+                { icon: Undo2, label: "Undo", onClick: () => store.undo(), disabled: !past.length },
+                { icon: Redo2, label: "Redo", onClick: () => store.redo(), disabled: !future.length },
+                {
+                  icon: RotateCcw,
+                  label: "Reset pipeline",
+                  onClick: () => store.reset(),
+                  disabled: !steps.length && !processed,
+                },
+              ].map((b) => (
+                <button
+                  key={b.label}
+                  title={b.label}
+                  aria-label={b.label}
+                  onClick={b.onClick}
+                  disabled={b.disabled}
+                  className="grid h-8 w-8 place-items-center rounded-lg border text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent"
+                >
+                  <b.icon className="h-3.5 w-3.5" />
+                </button>
+              ))}
+              <span className="ml-1 rounded-full bg-secondary px-2.5 py-1 font-mono text-xs text-muted-foreground">
+                {steps.length}
+              </span>
+            </div>
           </div>
+
 
           {steps.length === 0 ? (
             <p className="mt-6 rounded-xl border border-dashed p-6 text-center text-xs text-muted-foreground">
@@ -231,7 +289,11 @@ function PreprocessingPage() {
                     </div>
                     <div>
                       <dt className="text-muted-foreground">Method</dt>
-                      <dd className="mt-0.5 truncate font-medium">{methodLabel(s.op, s.method)}</dd>
+                      <dd className="mt-0.5 truncate font-medium">
+                        {methodLabel(s.op, s.method)}
+                        {s.value ? <span className="text-cyan"> · {s.value}</span> : null}
+                      </dd>
+
                     </div>
                   </dl>
                   <div className="mt-4 flex items-center gap-1.5">
@@ -243,8 +305,10 @@ function PreprocessingPage() {
                           setOp(s.op);
                           setColumn(s.column);
                           setMethod(s.method);
+                          setValue(s.value ?? "");
                           setEditingId(s.id);
                         },
+
                       },
                       { icon: Trash2, label: "Delete", onClick: () => store.removeStep(s.id) },
                       { icon: ArrowUp, label: "Move up", onClick: () => store.move(s.id, -1) },

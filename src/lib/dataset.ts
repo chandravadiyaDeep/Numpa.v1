@@ -8,15 +8,31 @@ export interface ColumnProfile {
   missing: number;
   missingPct: number;
   unique: number;
+  uniquePct: number;
   mean?: number;
   median?: number;
+  mode?: string | number;
   std?: number;
+  variance?: number;
   min?: number;
   max?: number;
+  range?: number;
   q1?: number;
   q3?: number;
+  iqr?: number;
+  p5?: number;
+  p95?: number;
+  skewness?: number;
+  kurtosis?: number;
+  outliers?: number;
+  outlierPct?: number;
+  constant: boolean;
+  highCardinality: boolean;
+  idLike: boolean;
   top?: string;
+  topCount?: number;
 }
+
 
 export interface Dataset {
   name: string;
@@ -102,6 +118,11 @@ export function profileColumn(ds: Dataset, col: string): ColumnProfile {
   const nums = present.filter((v) => typeof v === "number") as number[];
   const isNumeric = present.length > 0 && nums.length / present.length > 0.8;
   const unique = new Set(present.map(String)).size;
+  const n = values.length || 1;
+
+  const counts = new Map<string, number>();
+  present.forEach((v) => counts.set(String(v), (counts.get(String(v)) ?? 0) + 1));
+  const topEntry = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
 
   const base: ColumnProfile = {
     name: col,
@@ -109,29 +130,54 @@ export function profileColumn(ds: Dataset, col: string): ColumnProfile {
     missing,
     missingPct: values.length ? (missing / values.length) * 100 : 0,
     unique,
+    uniquePct: (unique / n) * 100,
+    constant: unique <= 1,
+    highCardinality: !isNumeric && unique > 50 && unique / n > 0.5,
+    idLike: unique === values.length && values.length > 1,
+    top: topEntry?.[0],
+    topCount: topEntry?.[1],
   };
 
   if (isNumeric && nums.length) {
     const sorted = [...nums].sort((a, b) => a - b);
     const mean = nums.reduce((a, b) => a + b, 0) / nums.length;
-    const std = Math.sqrt(nums.reduce((a, b) => a + (b - mean) ** 2, 0) / nums.length);
+    const variance = nums.reduce((a, b) => a + (b - mean) ** 2, 0) / nums.length;
+    const std = Math.sqrt(variance);
+    const q1 = quantile(sorted, 0.25);
+    const q3 = quantile(sorted, 0.75);
+    const iqr = q3 - q1;
+    const lo = q1 - 1.5 * iqr;
+    const hi = q3 + 1.5 * iqr;
+    const outliers = nums.filter((v) => v < lo || v > hi).length;
+    const m3 = nums.reduce((a, b) => a + (b - mean) ** 3, 0) / nums.length;
+    const m4 = nums.reduce((a, b) => a + (b - mean) ** 4, 0) / nums.length;
+    const min = sorted[0];
+    const max = sorted[sorted.length - 1];
     return {
       ...base,
       mean,
       std,
-      min: sorted[0],
-      max: sorted[sorted.length - 1],
+      variance,
+      min,
+      max,
+      range: max - min,
       median: quantile(sorted, 0.5),
-      q1: quantile(sorted, 0.25),
-      q3: quantile(sorted, 0.75),
+      mode: topEntry ? Number(topEntry[0]) : undefined,
+      q1,
+      q3,
+      iqr,
+      p5: quantile(sorted, 0.05),
+      p95: quantile(sorted, 0.95),
+      skewness: std ? m3 / std ** 3 : 0,
+      kurtosis: std ? m4 / std ** 4 - 3 : 0,
+      outliers,
+      outlierPct: (outliers / nums.length) * 100,
     };
   }
 
-  const counts = new Map<string, number>();
-  present.forEach((v) => counts.set(String(v), (counts.get(String(v)) ?? 0) + 1));
-  const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
-  return { ...base, top };
+  return { ...base, mode: topEntry?.[0] };
 }
+
 
 export function profileDataset(ds: Dataset): ColumnProfile[] {
   return ds.columns.map((c) => profileColumn(ds, c));
@@ -230,14 +276,20 @@ export type OperationId =
   | "outliers"
   | "duplicates"
   | "feature-selection"
-  | "datatype";
+  | "datatype"
+  | "text"
+  | "rounding"
+  | "rename";
 
 export interface Step {
   id: string;
   op: OperationId;
   column: string;
   method: string;
+  /** Free-text parameter for methods that need one (custom fill, rename, replace). */
+  value?: string;
 }
+
 
 export const OPERATIONS: {
   id: OperationId;
@@ -257,7 +309,9 @@ export const OPERATIONS: {
       { value: "median", label: "Median" },
       { value: "mode", label: "Mode" },
       { value: "zero", label: "Constant zero" },
+      { value: "custom", label: "Custom value" },
       { value: "drop", label: "Drop rows" },
+
     ],
     columnScope: "all",
   },
@@ -331,7 +385,50 @@ export const OPERATIONS: {
     ],
     columnScope: "all",
   },
+  {
+    id: "text",
+    label: "Text Cleaning",
+    icon: "🔡",
+    description: "Normalise text values: trim, case, or find & replace.",
+    methods: [
+      { value: "trim", label: "Trim whitespace" },
+      { value: "lower", label: "Lowercase" },
+      { value: "upper", label: "Uppercase" },
+      { value: "replace", label: "Replace text" },
+    ],
+    columnScope: "all",
+  },
+  {
+    id: "rounding",
+    label: "Round & Clip",
+    icon: "🔢",
+    description: "Round numeric precision or clip values to percentile bounds.",
+    methods: [
+      { value: "round0", label: "Round to integer" },
+      { value: "round2", label: "Round to 2 decimals" },
+      { value: "clip-p5p95", label: "Clip to P5–P95" },
+      { value: "clip-custom", label: "Clip to max value" },
+    ],
+    columnScope: "numeric",
+  },
+  {
+    id: "rename",
+    label: "Rename Column",
+    icon: "🏷️",
+    description: "Give a column a clearer, model-friendly name.",
+    methods: [{ value: "rename", label: "Rename to" }],
+    columnScope: "all",
+  },
 ];
+
+/** Methods that require the free-text `value` parameter. */
+export const METHODS_WITH_VALUE = new Set([
+  "custom",
+  "replace",
+  "rename",
+  "clip-custom",
+]);
+
 
 export const opMeta = (id: OperationId) => OPERATIONS.find((o) => o.id === id)!;
 export const methodLabel = (op: OperationId, method: string) =>
@@ -351,6 +448,12 @@ function applyStep(ds: Dataset, step: Step): Dataset {
       if (step.method === "mean") fill = Number((profile?.mean ?? 0).toFixed(4));
       else if (step.method === "median") fill = Number((profile?.median ?? 0).toFixed(4));
       else if (step.method === "mode") fill = profile?.top ?? 0;
+      else if (step.method === "custom") {
+        const raw = step.value ?? "";
+        const n = Number(raw);
+        fill = raw !== "" && !Number.isNaN(n) ? n : raw;
+      }
+
       rows.forEach((r) => {
         if (r[col] === null || r[col] === "") r[col] = fill;
       });
@@ -441,8 +544,46 @@ function applyStep(ds: Dataset, step: Step): Dataset {
       });
       return { ...ds, rows };
     }
+    case "text": {
+      const [find, repl] = (step.value ?? "").split("=>").map((s) => s.trim());
+      rows.forEach((r) => {
+        const v = r[col];
+        if (v === null || v === undefined) return;
+        let s = String(v);
+        if (step.method === "trim") s = s.trim();
+        else if (step.method === "lower") s = s.toLowerCase();
+        else if (step.method === "upper") s = s.toUpperCase();
+        else if (step.method === "replace" && find) s = s.split(find).join(repl ?? "");
+        r[col] = s;
+      });
+      return { ...ds, rows };
+    }
+    case "rounding": {
+      const { p5 = 0, p95 = 0 } = profile ?? {};
+      const cap = Number(step.value);
+      rows.forEach((r) => {
+        const v = r[col];
+        if (typeof v !== "number") return;
+        if (step.method === "round0") r[col] = Math.round(v);
+        else if (step.method === "round2") r[col] = Number(v.toFixed(2));
+        else if (step.method === "clip-p5p95") r[col] = Math.min(p95, Math.max(p5, v));
+        else if (!Number.isNaN(cap)) r[col] = Math.min(cap, v);
+      });
+      return { ...ds, rows };
+    }
+    case "rename": {
+      const next = (step.value ?? "").trim();
+      if (!next || next === col || columns.includes(next)) return ds;
+      columns = columns.map((c) => (c === col ? next : c));
+      rows.forEach((r) => {
+        r[next] = r[col] ?? null;
+        delete r[col];
+      });
+      return { ...ds, columns, rows };
+    }
     default:
       return ds;
+
   }
 }
 

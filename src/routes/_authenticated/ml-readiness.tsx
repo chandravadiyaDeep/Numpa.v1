@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CheckCircle2, Cpu, Download, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Cpu, Download, ListChecks, XCircle } from "lucide-react";
 import { PageShell } from "@/components/uda/PageShell";
-import { useActiveDataset, useStudio } from "@/lib/studio-store";
-import { mlReadiness, profileDataset, toCsv } from "@/lib/dataset";
+import { AnimatedNumber } from "@/components/uda/AnimatedNumber";
+import { store, useActiveDataset, useStudio } from "@/lib/studio-store";
+import { profileDataset, toCsv } from "@/lib/dataset";
+import { readinessReport, type Status } from "@/lib/insights";
 
 export const Route = createFileRoute("/_authenticated/ml-readiness")({
   head: () => ({
@@ -11,21 +13,27 @@ export const Route = createFileRoute("/_authenticated/ml-readiness")({
       {
         name: "description",
         content:
-          "Check whether your prepared CSV is model-ready: missing values, encoding, duplicates, variance, scale and sample size.",
+          "Score your prepared dataset 0-100 across completeness, data quality, feature quality, preprocessing and target readiness before training.",
       },
       { property: "og:title", content: "ML Readiness — UDA" },
       {
         property: "og:description",
-        content: "A pre-training gate for your dataset, with a readiness score and export.",
+        content: "A measurable pre-training gate for your dataset, with a scored breakdown and export.",
       },
     ],
   }),
   component: MlReadinessPage,
 });
 
+const TONE: Record<Status, { icon: typeof CheckCircle2; className: string }> = {
+  pass: { icon: CheckCircle2, className: "text-success" },
+  warn: { icon: AlertTriangle, className: "text-warning" },
+  fail: { icon: XCircle, className: "text-destructive" },
+};
+
 function MlReadinessPage() {
   const ds = useActiveDataset();
-  const { processed } = useStudio();
+  const { processed, target } = useStudio();
 
   if (!ds)
     return (
@@ -34,15 +42,17 @@ function MlReadinessPage() {
       </PageShell>
     );
 
-  const { checks, score, numeric, categorical } = mlReadiness(ds);
+  const report = readinessReport(ds, target ?? undefined);
   const profiles = profileDataset(ds);
+  const ring =
+    report.score >= 80 ? "var(--chart-2)" : report.score >= 55 ? "var(--warning)" : "var(--destructive)";
 
   const download = () => {
     const blob = new Blob([toCsv(ds)], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `clean_${ds.name.replace(/\.csv$/i, "")}.csv`;
+    a.download = `clean_${ds.name.replace(/\.[^.]+$/i, "")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -75,25 +85,59 @@ function MlReadinessPage() {
                 cy="60"
                 r="52"
                 fill="none"
-                stroke="var(--chart-2)"
+                stroke={ring}
                 strokeWidth="10"
                 strokeLinecap="round"
-                strokeDasharray={`${(score / 100) * 2 * Math.PI * 52} 999`}
+                strokeDasharray={`${(report.score / 100) * 2 * Math.PI * 52} 999`}
+                className="transition-all duration-1000 ease-out"
               />
             </svg>
             <div>
-              <p className="font-display text-4xl font-bold">{score}%</p>
+              <AnimatedNumber
+                value={report.score}
+                suffix="%"
+                className="font-display text-4xl font-bold"
+              />
               <p className="mt-1 text-xs text-muted-foreground">Readiness</p>
             </div>
           </div>
-          <p className="mt-6 max-w-xs text-sm text-muted-foreground">
-            {score === 100
-              ? "This dataset passes every structural check and can go straight into training."
-              : "Resolve the failing checks in the Preprocessing Studio to raise this score."}
-          </p>
+
+          <label className="mt-6 w-full text-left">
+            <span className="text-xs font-medium text-muted-foreground">Target column</span>
+            <select
+              value={target ?? ""}
+              onChange={(e) => store.setTarget(e.target.value || null)}
+              className="mt-2 h-11 w-full rounded-xl border bg-secondary/50 px-3 text-sm outline-none transition-colors focus:border-primary"
+            >
+              <option value="">No target selected</option>
+              {profiles.map((p) => (
+                <option key={p.name} value={p.name}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="mt-6 w-full space-y-4">
+            {report.categories.map((c) => (
+              <div key={c.name}>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">{c.name}</span>
+                  <span className="font-mono font-medium">{c.score}%</span>
+                </div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-secondary">
+                  <div
+                    className="h-full rounded-full brand-gradient transition-[width] duration-700 ease-out"
+                    style={{ width: `${c.score}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
           <Link
             to="/preprocessing"
-            className="mt-6 inline-flex h-11 items-center rounded-xl brand-gradient px-6 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+            className="mt-7 inline-flex h-11 items-center rounded-xl brand-gradient px-6 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
           >
             Open Preprocessing Studio
           </Link>
@@ -105,38 +149,75 @@ function MlReadinessPage() {
               <Cpu className="h-4 w-4 text-cyan" />
               <h2 className="text-base font-semibold">Readiness checks</h2>
             </div>
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
-              {checks.map((c) => (
-                <div key={c.label} className="rounded-xl border bg-secondary/40 p-4">
-                  <div className="flex items-center gap-2">
-                    {c.passed ? (
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
-                    ) : (
-                      <XCircle className="h-4 w-4 shrink-0 text-destructive" />
-                    )}
-                    <p className="min-w-0 truncate text-sm font-medium">{c.label}</p>
+            <div className="mt-5 space-y-6">
+              {report.categories.map((cat) => (
+                <div key={cat.name}>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {cat.name}
+                  </p>
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    {report.checks
+                      .filter((c) => c.category === cat.name)
+                      .map((c) => {
+                        const Icon = TONE[c.status].icon;
+                        return (
+                          <div
+                            key={c.label}
+                            className="rounded-xl border bg-secondary/40 p-4 transition-colors hover:bg-secondary/60"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Icon className={`h-4 w-4 shrink-0 ${TONE[c.status].className}`} />
+                              <p className="min-w-0 truncate text-sm font-medium">{c.label}</p>
+                            </div>
+                            <p className="mt-2 text-xs text-muted-foreground">{c.detail}</p>
+                          </div>
+                        );
+                      })}
                   </div>
-                  <p className="mt-2 text-xs text-muted-foreground">{c.detail}</p>
                 </div>
               ))}
             </div>
           </section>
 
+          {report.actions.length > 0 && (
+            <section className="panel p-6">
+              <div className="flex items-center gap-2">
+                <ListChecks className="h-4 w-4 text-cyan" />
+                <h2 className="text-base font-semibold">Recommended actions</h2>
+              </div>
+              <ol className="mt-4 space-y-2.5">
+                {report.actions.map((a, i) => (
+                  <li key={a} className="flex gap-3 text-sm text-muted-foreground">
+                    <span className="font-mono text-xs text-cyan">{String(i + 1).padStart(2, "0")}</span>
+                    {a}
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+
           <section className="panel p-6">
             <h2 className="text-base font-semibold">Feature inventory</h2>
             <p className="mt-1 text-xs text-muted-foreground">
-              {numeric} numeric · {categorical} categorical · {ds.rows.length.toLocaleString()} rows
+              {report.numeric} numeric · {report.categorical} categorical ·{" "}
+              {ds.rows.length.toLocaleString()} rows
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               {profiles.map((p) => (
                 <span
                   key={p.name}
                   className={`rounded-lg border px-3 py-1.5 text-xs font-medium ${
-                    p.type === "numeric" ? "text-primary" : "text-cyan"
+                    p.name === target
+                      ? "border-primary text-primary"
+                      : p.type === "numeric"
+                        ? "text-primary"
+                        : "text-cyan"
                   }`}
                 >
                   {p.name}
-                  <span className="ml-2 text-muted-foreground">{p.type}</span>
+                  <span className="ml-2 text-muted-foreground">
+                    {p.name === target ? "target" : p.type}
+                  </span>
                 </span>
               ))}
             </div>
