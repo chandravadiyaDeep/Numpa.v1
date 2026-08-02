@@ -18,7 +18,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { Lightbulb } from "lucide-react";
 import { PageShell } from "@/components/uda/PageShell";
+
 import { useActiveDataset } from "@/lib/studio-store";
 import {
   categoryCounts,
