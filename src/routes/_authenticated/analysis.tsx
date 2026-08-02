@@ -1,13 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
+  Fingerprint,
   Gauge,
+  GitCompareArrows,
   Rows3,
   Sparkles,
   Table2,
 } from "lucide-react";
 import { PageShell } from "@/components/uda/PageShell";
+import { AnimatedNumber } from "@/components/uda/AnimatedNumber";
 import { useActiveDataset } from "@/lib/studio-store";
 import {
   aiInsights,
@@ -16,6 +20,8 @@ import {
   profileDataset,
   qualityScore,
 } from "@/lib/dataset";
+import { covariance, strongestRelationships } from "@/lib/insights";
+
 
 export const Route = createFileRoute("/_authenticated/analysis")({
   head: () => ({
