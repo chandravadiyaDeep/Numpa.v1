@@ -300,14 +300,70 @@ function AnalysisPage() {
                     <span className="font-mono font-medium">{m.value}%</span>
                   </div>
                   <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-secondary">
-                    <div className="h-full rounded-full brand-gradient" style={{ width: `${m.value}%` }} />
+                    <div
+                      className="h-full rounded-full brand-gradient transition-[width] duration-700 ease-out"
+                      style={{ width: `${m.value}%` }}
+                    />
                   </div>
                 </div>
               ))}
             </div>
           </section>
+
+          {flagged.length > 0 && (
+            <section className="panel p-6">
+              <h2 className="text-base font-semibold">Cardinality warnings</h2>
+              <ul className="mt-4 space-y-2.5 text-sm">
+                {flagged.map((p) => (
+                  <li key={p.name} className="flex items-center justify-between gap-3">
+                    <span className="truncate font-medium">{p.name}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {p.constant
+                        ? "zero variance"
+                        : p.idLike
+                          ? "unique per row"
+                          : `${p.unique} levels`}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
       </div>
+
+      {relationships.length > 0 && (
+        <section className="panel mt-6 p-6">
+          <div className="flex items-center gap-2">
+            <GitCompareArrows className="h-4 w-4 text-cyan" />
+            <h2 className="text-base font-semibold">Strongest relationships</h2>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Pearson correlation and covariance between numeric features.
+          </p>
+          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {relationships.map((r) => (
+              <div key={`${r.a}-${r.b}`} className="rounded-xl border bg-secondary/40 p-4">
+                <p className="truncate text-sm font-medium">
+                  {r.a} <span className="text-muted-foreground">↔</span> {r.b}
+                </p>
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-secondary">
+                  <div
+                    className={`h-full rounded-full transition-[width] duration-700 ${
+                      r.r >= 0 ? "bg-primary" : "bg-warning"
+                    }`}
+                    style={{ width: `${Math.min(Math.abs(r.r) * 100, 100)}%` }}
+                  />
+                </div>
+                <p className="mt-2 font-mono text-xs text-muted-foreground">
+                  r = {r.r.toFixed(3)} · cov = {covariance(ds, r.a, r.b).toFixed(2)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
 
       <section className="panel mt-6 p-6">
         <div className="flex items-center gap-2">
