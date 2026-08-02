@@ -3,7 +3,9 @@ import { AlertTriangle, CheckCircle2, Cpu, Download, ListChecks, XCircle } from 
 import { PageShell } from "@/components/uda/PageShell";
 import { AnimatedNumber } from "@/components/uda/AnimatedNumber";
 import { store, useActiveDataset, useStudio } from "@/lib/studio-store";
-import { profileDataset, toCsv } from "@/lib/dataset";
+import { profileDataset } from "@/lib/dataset";
+import { ExportMenu } from "@/components/uda/ExportMenu";
+import { DATA_FORMATS, exportDataset, exportReadinessPdf } from "@/lib/export";
 import { readinessReport, type Status } from "@/lib/insights";
 
 export const Route = createFileRoute("/_authenticated/ml-readiness")({
@@ -47,15 +49,25 @@ function MlReadinessPage() {
   const ring =
     report.score >= 80 ? "var(--chart-2)" : report.score >= 55 ? "var(--warning)" : "var(--destructive)";
 
-  const download = () => {
-    const blob = new Blob([toCsv(ds)], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `clean_${ds.name.replace(/\.[^.]+$/i, "")}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const reportPdf = () =>
+    exportReadinessPdf({
+      datasetName: ds.name,
+      rows: ds.rows.length,
+      columns: ds.columns.length,
+      processed: Boolean(processed),
+      target: target ?? null,
+      score: report.score,
+      numeric: report.numeric,
+      categorical: report.categorical,
+      categories: report.categories.map((c) => ({ name: c.name, score: c.score })),
+      checks: report.checks.map((c) => ({
+        category: c.category,
+        label: c.label,
+        detail: c.detail,
+        status: c.status,
+      })),
+      actions: report.actions,
+    });
 
   return (
     <PageShell
@@ -66,13 +78,27 @@ function MlReadinessPage() {
           : "Scoring the raw upload — run a pipeline to improve it."
       }
       actions={
-        <button
-          onClick={download}
-          className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border bg-secondary/60 px-5 text-sm font-semibold transition-colors hover:bg-secondary"
-        >
-          <Download className="h-4 w-4 text-cyan" />
-          Download Clean CSV
-        </button>
+        <ExportMenu
+          label="Export"
+          icon={<Download className="h-4 w-4 text-cyan" />}
+          groups={[
+            {
+              label: "Readiness report",
+              options: [
+                { id: "pdf", label: "Readiness report", hint: "PDF", onSelect: reportPdf },
+              ],
+            },
+            {
+              label: "Cleaned dataset",
+              options: DATA_FORMATS.map((f) => ({
+                id: f.id,
+                label: f.label,
+                hint: f.hint,
+                onSelect: () => exportDataset(ds, f.id),
+              })),
+            },
+          ]}
+        />
       }
     >
       <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">

@@ -13,6 +13,8 @@ import {
   Undo2,
 } from "lucide-react";
 import { PageShell } from "@/components/uda/PageShell";
+import { ExportMenu } from "@/components/uda/ExportMenu";
+import { DATA_FORMATS, exportDataset } from "@/lib/export";
 import { OpIcon } from "@/components/uda/OpIcon";
 import { store, useStudio } from "@/lib/studio-store";
 import {
@@ -21,7 +23,7 @@ import {
   methodLabel,
   opMeta,
   profileDataset,
-  toCsv,
+  
   type OperationId,
 } from "@/lib/dataset";
 
@@ -100,16 +102,6 @@ function PreprocessingPage() {
   };
 
 
-  const download = () => {
-    if (!processed) return;
-    const blob = new Blob([toCsv(processed)], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `clean_${processed.name.replace(/\.csv$/i, "")}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   const preview = processed
     ? { columns: processed.columns.slice(0, 12), rows: processed.rows.slice(0, 10) }
@@ -359,13 +351,21 @@ function PreprocessingPage() {
                 after processing
               </p>
             </div>
-            <button
-              onClick={download}
-              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border bg-secondary/60 px-5 text-sm font-semibold transition-colors hover:bg-secondary"
-            >
-              <Download className="h-4 w-4 text-cyan" />
-              Download Clean CSV
-            </button>
+            <ExportMenu
+              label="Download dataset"
+              icon={<Download className="h-4 w-4 text-cyan" />}
+              groups={[
+                {
+                  label: "Processed dataset",
+                  options: DATA_FORMATS.map((f) => ({
+                    id: f.id,
+                    label: f.label,
+                    hint: f.hint,
+                    onSelect: () => exportDataset(processed, f.id),
+                  })),
+                },
+              ]}
+            />
           </div>
           <div className="mt-5 overflow-x-auto scroll-slim">
             <table className="w-full min-w-[640px] border-separate border-spacing-0 text-sm">
