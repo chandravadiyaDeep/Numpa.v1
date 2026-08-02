@@ -289,7 +289,11 @@ function PreprocessingPage() {
                     </div>
                     <div>
                       <dt className="text-muted-foreground">Method</dt>
-                      <dd className="mt-0.5 truncate font-medium">{methodLabel(s.op, s.method)}</dd>
+                      <dd className="mt-0.5 truncate font-medium">
+                        {methodLabel(s.op, s.method)}
+                        {s.value ? <span className="text-cyan"> · {s.value}</span> : null}
+                      </dd>
+
                     </div>
                   </dl>
                   <div className="mt-4 flex items-center gap-1.5">
