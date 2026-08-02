@@ -47,23 +47,35 @@ function Kpi({
   label,
   value,
   hint,
+  decimals = 0,
+  suffix = "",
 }: {
   icon: typeof Rows3;
   label: string;
-  value: string;
+  value: number;
   hint: string;
+  decimals?: number;
+  suffix?: string;
 }) {
   return (
-    <div className="panel lift p-6">
+    <div className="panel lift p-6 transition-transform duration-200 hover:-translate-y-0.5">
       <div className="flex items-center gap-2 text-muted-foreground">
         <Icon className="h-4 w-4 text-cyan" />
         <span className="text-xs font-medium uppercase tracking-wider">{label}</span>
       </div>
-      <p className="mt-5 font-display text-3xl font-bold">{value}</p>
+      <AnimatedNumber
+        value={value}
+        decimals={decimals}
+        suffix={suffix}
+        className="mt-5 block font-display text-3xl font-bold"
+      />
       <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
     </div>
   );
 }
+
+const fmt = (v?: number, d = 2) => (typeof v === "number" && Number.isFinite(v) ? v.toFixed(d) : "—");
+
 
 function AnalysisPage() {
   const ds = useActiveDataset();
