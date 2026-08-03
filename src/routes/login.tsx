@@ -34,7 +34,7 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const target = search.redirect && search.redirect.startsWith("/") ? search.redirect : "/";
+  const target = search.redirect && search.redirect.startsWith("/") ? search.redirect : "/dashboard";
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -131,6 +131,8 @@ function LoginPage() {
           {loading && <Loader2 className="h-4 w-4 animate-spin" />}
           {loading ? "Signing in…" : "Sign in"}
         </button>
+
+        <GoogleButton onError={setError} />
       </form>
     </AuthShell>
   );

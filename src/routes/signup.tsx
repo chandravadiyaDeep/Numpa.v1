@@ -157,6 +157,8 @@ function SignupPage() {
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             {loading ? "Creating account…" : "Create account"}
           </button>
+
+          <GoogleButton onError={setError} />
         </form>
       )}
     </AuthShell>
