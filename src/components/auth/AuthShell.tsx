@@ -21,7 +21,7 @@ export function AuthShell({
             <span className="grid h-9 w-9 place-items-center rounded-xl brand-gradient shadow-[0_8px_24px_-10px] shadow-primary">
               <Sparkles className="h-4.5 w-4.5 text-primary-foreground" strokeWidth={2.4} />
             </span>
-            <span className="font-display text-lg font-bold tracking-tight">UDA</span>
+            <span className="font-display text-lg font-bold tracking-tight">Numpa</span>
           </Link>
 
           <div className="panel p-7">

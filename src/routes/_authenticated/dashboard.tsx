@@ -18,16 +18,16 @@ import { parseCsv, qualityScore } from "@/lib/dataset";
 import { healthSummary, readinessReport } from "@/lib/insights";
 import { store, useStudio } from "@/lib/studio-store";
 
-export const Route = createFileRoute("/_authenticated/")({
+export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "UDA — AI Data Preparation Studio for CSV, Excel & JSON" },
+      { title: "Numpa — AI Data Preparation Studio for CSV, Excel & JSON" },
       {
         name: "description",
         content:
           "Universal Data Analyzer: upload CSV, XLSX or JSON, profile it, build a preprocessing pipeline, visualize it and export a model-ready dataset.",
       },
-      { property: "og:title", content: "UDA — AI Data Preparation Studio" },
+      { property: "og:title", content: "Numpa — AI Data Preparation Studio" },
       {
         property: "og:description",
         content:
@@ -184,7 +184,7 @@ function Index() {
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-cyan" />
                 <h2 className="text-base font-semibold">
-                  {live ? "Recommended next actions" : "What UDA finds in this sample"}
+                  {live ? "Recommended next actions" : "What Numpa finds in this sample"}
                 </h2>
               </div>
               <div className="mt-5 grid gap-3 md:grid-cols-2">

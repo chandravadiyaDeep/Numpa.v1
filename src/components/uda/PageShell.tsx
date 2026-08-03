@@ -51,7 +51,7 @@ function EmptyState() {
         </p>
       </div>
       <Link
-        to="/"
+        to="/dashboard"
         className="mt-2 inline-flex h-11 items-center rounded-xl brand-gradient px-6 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
       >
         Upload CSV

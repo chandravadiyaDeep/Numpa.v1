@@ -4,15 +4,16 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthShell, Field, inputClass, submitClass } from "@/components/auth/AuthShell";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 
 export const Route = createFileRoute("/signup")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Create account — UDA Data Studio" },
-      { name: "description", content: "Create a UDA account to upload CSVs, build cleaning pipelines and export model-ready data." },
-      { property: "og:title", content: "Create account — UDA Data Studio" },
-      { property: "og:description", content: "Create a UDA account to upload CSVs, build cleaning pipelines and export model-ready data." },
+      { title: "Create account — Numpa Data Studio" },
+      { name: "description", content: "Create a Numpa account to upload CSVs, build cleaning pipelines and export model-ready data." },
+      { property: "og:title", content: "Create account — Numpa Data Studio" },
+      { property: "og:description", content: "Create a Numpa account to upload CSVs, build cleaning pipelines and export model-ready data." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -33,7 +34,7 @@ function SignupPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/", replace: true });
+      if (data.session) navigate({ to: "/dashboard", replace: true });
     });
   }, [navigate]);
 
@@ -73,13 +74,13 @@ function SignupPage() {
       .eq("id", data.session.user.id);
 
     toast.success("Account created");
-    navigate({ to: "/", replace: true });
+    navigate({ to: "/dashboard", replace: true });
   };
 
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Set up your UDA workspace in a few seconds."
+      subtitle="Set up your Numpa workspace in a few seconds."
       footer={
         <>
           Already have an account?{" "}
@@ -157,6 +158,8 @@ function SignupPage() {
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             {loading ? "Creating account…" : "Create account"}
           </button>
+
+          <GoogleButton onError={setError} />
         </form>
       )}
     </AuthShell>

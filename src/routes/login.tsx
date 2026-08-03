@@ -4,6 +4,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthShell, Field, inputClass, submitClass } from "@/components/auth/AuthShell";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 import { setRemember } from "@/lib/auth-session";
 
 export const Route = createFileRoute("/login")({
@@ -13,10 +14,10 @@ export const Route = createFileRoute("/login")({
   }),
   head: () => ({
     meta: [
-      { title: "Sign in — UDA Data Studio" },
-      { name: "description", content: "Sign in to your UDA workspace to profile, clean and export CSV datasets." },
-      { property: "og:title", content: "Sign in — UDA Data Studio" },
-      { property: "og:description", content: "Sign in to your UDA workspace to profile, clean and export CSV datasets." },
+      { title: "Sign in — Numpa Data Studio" },
+      { name: "description", content: "Sign in to your Numpa workspace to profile, clean and export CSV datasets." },
+      { property: "og:title", content: "Sign in — Numpa Data Studio" },
+      { property: "og:description", content: "Sign in to your Numpa workspace to profile, clean and export CSV datasets." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -34,7 +35,7 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const target = search.redirect && search.redirect.startsWith("/") ? search.redirect : "/";
+  const target = search.redirect && search.redirect.startsWith("/") ? search.redirect : "/dashboard";
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -131,6 +132,8 @@ function LoginPage() {
           {loading && <Loader2 className="h-4 w-4 animate-spin" />}
           {loading ? "Signing in…" : "Sign in"}
         </button>
+
+        <GoogleButton onError={setError} />
       </form>
     </AuthShell>
   );
