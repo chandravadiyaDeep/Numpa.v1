@@ -11,13 +11,13 @@ import { readinessReport, type Status } from "@/lib/insights";
 export const Route = createFileRoute("/_authenticated/ml-readiness")({
   head: () => ({
     meta: [
-      { title: "ML Readiness — UDA" },
+      { title: "ML Readiness — Numpa" },
       {
         name: "description",
         content:
           "Score your prepared dataset 0-100 across completeness, data quality, feature quality, preprocessing and target readiness before training.",
       },
-      { property: "og:title", content: "ML Readiness — UDA" },
+      { property: "og:title", content: "ML Readiness — Numpa" },
       {
         property: "og:description",
         content: "A measurable pre-training gate for your dataset, with a scored breakdown and export.",

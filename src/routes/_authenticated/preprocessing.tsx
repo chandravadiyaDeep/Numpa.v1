@@ -31,13 +31,13 @@ import {
 export const Route = createFileRoute("/_authenticated/preprocessing")({
   head: () => ({
     meta: [
-      { title: "Data Preprocessing Studio — UDA" },
+      { title: "Data Preprocessing Studio — Numpa" },
       {
         name: "description",
         content:
           "Three-panel preprocessing workspace: pick an operation, configure it, stack steps into a pipeline and export a clean CSV.",
       },
-      { property: "og:title", content: "Data Preprocessing Studio — UDA" },
+      { property: "og:title", content: "Data Preprocessing Studio — Numpa" },
       {
         property: "og:description",
         content: "Build a reproducible CSV cleaning pipeline: impute, encode, scale, dedupe, export.",

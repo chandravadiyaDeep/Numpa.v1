@@ -13,10 +13,10 @@ export const Route = createFileRoute("/login")({
   }),
   head: () => ({
     meta: [
-      { title: "Sign in — UDA Data Studio" },
-      { name: "description", content: "Sign in to your UDA workspace to profile, clean and export CSV datasets." },
-      { property: "og:title", content: "Sign in — UDA Data Studio" },
-      { property: "og:description", content: "Sign in to your UDA workspace to profile, clean and export CSV datasets." },
+      { title: "Sign in — Numpa Data Studio" },
+      { name: "description", content: "Sign in to your Numpa workspace to profile, clean and export CSV datasets." },
+      { property: "og:title", content: "Sign in — Numpa Data Studio" },
+      { property: "og:description", content: "Sign in to your Numpa workspace to profile, clean and export CSV datasets." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

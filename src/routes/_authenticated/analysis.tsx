@@ -26,13 +26,13 @@ import { covariance, strongestRelationships } from "@/lib/insights";
 export const Route = createFileRoute("/_authenticated/analysis")({
   head: () => ({
     meta: [
-      { title: "Dataset Analysis — UDA" },
+      { title: "Dataset Analysis — Numpa" },
       {
         name: "description",
         content:
           "Automated CSV profiling: dataset summary, validation checks, column statistics, quality score and AI insights.",
       },
-      { property: "og:title", content: "Dataset Analysis — UDA" },
+      { property: "og:title", content: "Dataset Analysis — Numpa" },
       {
         property: "og:description",
         content: "Summary, validation, statistics, quality score and AI insights for your CSV.",

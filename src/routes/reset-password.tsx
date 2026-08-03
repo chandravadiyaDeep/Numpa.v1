@@ -9,10 +9,10 @@ export const Route = createFileRoute("/reset-password")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Set a new password — UDA Data Studio" },
-      { name: "description", content: "Choose a new password for your UDA data preparation workspace." },
-      { property: "og:title", content: "Set a new password — UDA Data Studio" },
-      { property: "og:description", content: "Choose a new password for your UDA data preparation workspace." },
+      { title: "Set a new password — Numpa Data Studio" },
+      { name: "description", content: "Choose a new password for your Numpa data preparation workspace." },
+      { property: "og:title", content: "Set a new password — Numpa Data Studio" },
+      { property: "og:description", content: "Choose a new password for your Numpa data preparation workspace." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

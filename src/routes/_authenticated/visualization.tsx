@@ -41,13 +41,13 @@ import {
 export const Route = createFileRoute("/_authenticated/visualization")({
   head: () => ({
     meta: [
-      { title: "Visualization — UDA" },
+      { title: "Visualization — Numpa" },
       {
         name: "description",
         content:
           "Interactive CSV charts: histogram, scatter, line, pie, box plot, correlation heatmap and distribution plot.",
       },
-      { property: "og:title", content: "Visualization — UDA" },
+      { property: "og:title", content: "Visualization — Numpa" },
       {
         property: "og:description",
         content: "Explore distributions, relationships and correlations across your dataset.",

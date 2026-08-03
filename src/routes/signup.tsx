@@ -9,10 +9,10 @@ export const Route = createFileRoute("/signup")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Create account — UDA Data Studio" },
-      { name: "description", content: "Create a UDA account to upload CSVs, build cleaning pipelines and export model-ready data." },
-      { property: "og:title", content: "Create account — UDA Data Studio" },
-      { property: "og:description", content: "Create a UDA account to upload CSVs, build cleaning pipelines and export model-ready data." },
+      { title: "Create account — Numpa Data Studio" },
+      { name: "description", content: "Create a Numpa account to upload CSVs, build cleaning pipelines and export model-ready data." },
+      { property: "og:title", content: "Create account — Numpa Data Studio" },
+      { property: "og:description", content: "Create a Numpa account to upload CSVs, build cleaning pipelines and export model-ready data." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -79,7 +79,7 @@ function SignupPage() {
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Set up your UDA workspace in a few seconds."
+      subtitle="Set up your Numpa workspace in a few seconds."
       footer={
         <>
           Already have an account?{" "}

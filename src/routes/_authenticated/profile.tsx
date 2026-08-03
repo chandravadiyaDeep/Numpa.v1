@@ -10,10 +10,10 @@ import { Field, inputClass, submitClass } from "@/components/auth/AuthShell";
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
     meta: [
-      { title: "Your profile — UDA Data Studio" },
-      { name: "description", content: "Manage your UDA account name and review the email tied to your data workspace." },
-      { property: "og:title", content: "Your profile — UDA Data Studio" },
-      { property: "og:description", content: "Manage your UDA account name and review the email tied to your data workspace." },
+      { title: "Your profile — Numpa Data Studio" },
+      { name: "description", content: "Manage your Numpa account name and review the email tied to your data workspace." },
+      { property: "og:title", content: "Your profile — Numpa Data Studio" },
+      { property: "og:description", content: "Manage your Numpa account name and review the email tied to your data workspace." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
