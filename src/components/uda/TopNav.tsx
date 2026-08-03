@@ -6,10 +6,12 @@ import { hydrateStudio, useStudio } from "@/lib/studio-store";
 import { supabase } from "@/integrations/supabase/client";
 
 const NAV = [
+  { to: "/dashboard", label: "Dashboard" },
   { to: "/analysis", label: "Analysis" },
   { to: "/preprocessing", label: "Preprocessing" },
   { to: "/visualization", label: "Visualization" },
   { to: "/ml-readiness", label: "ML Readiness" },
+  { to: "/feedback", label: "Feedback" },
 ] as const;
 
 export function TopNav() {

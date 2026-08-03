@@ -17,6 +17,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AuthenticatedAnalysisRouteImport } from './routes/_authenticated/analysis'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedFeedbackRouteImport } from './routes/_authenticated/feedback'
 import { Route as AuthenticatedMlReadinessRouteImport } from './routes/_authenticated/ml-readiness'
 import { Route as AuthenticatedPreprocessingRouteImport } from './routes/_authenticated/preprocessing'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
@@ -61,6 +62,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFeedbackRoute = AuthenticatedFeedbackRouteImport.update({
+  id: '/feedback',
+  path: '/feedback',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMlReadinessRoute =
   AuthenticatedMlReadinessRouteImport.update({
     id: '/ml-readiness',
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/analysis': typeof AuthenticatedAnalysisRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/feedback': typeof AuthenticatedFeedbackRoute
   '/ml-readiness': typeof AuthenticatedMlReadinessRoute
   '/preprocessing': typeof AuthenticatedPreprocessingRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/analysis': typeof AuthenticatedAnalysisRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/feedback': typeof AuthenticatedFeedbackRoute
   '/ml-readiness': typeof AuthenticatedMlReadinessRoute
   '/preprocessing': typeof AuthenticatedPreprocessingRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_authenticated/analysis': typeof AuthenticatedAnalysisRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/feedback': typeof AuthenticatedFeedbackRoute
   '/_authenticated/ml-readiness': typeof AuthenticatedMlReadinessRoute
   '/_authenticated/preprocessing': typeof AuthenticatedPreprocessingRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/analysis'
     | '/dashboard'
+    | '/feedback'
     | '/ml-readiness'
     | '/preprocessing'
     | '/profile'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/analysis'
     | '/dashboard'
+    | '/feedback'
     | '/ml-readiness'
     | '/preprocessing'
     | '/profile'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_authenticated/analysis'
     | '/_authenticated/dashboard'
+    | '/_authenticated/feedback'
     | '/_authenticated/ml-readiness'
     | '/_authenticated/preprocessing'
     | '/_authenticated/profile'
@@ -236,6 +248,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/feedback': {
+      id: '/_authenticated/feedback'
+      path: '/feedback'
+      fullPath: '/feedback'
+      preLoaderRoute: typeof AuthenticatedFeedbackRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/ml-readiness': {
       id: '/_authenticated/ml-readiness'
       path: '/ml-readiness'
@@ -270,6 +289,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnalysisRoute: typeof AuthenticatedAnalysisRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedFeedbackRoute: typeof AuthenticatedFeedbackRoute
   AuthenticatedMlReadinessRoute: typeof AuthenticatedMlReadinessRoute
   AuthenticatedPreprocessingRoute: typeof AuthenticatedPreprocessingRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
@@ -279,6 +299,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAnalysisRoute: AuthenticatedAnalysisRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedFeedbackRoute: AuthenticatedFeedbackRoute,
   AuthenticatedMlReadinessRoute: AuthenticatedMlReadinessRoute,
   AuthenticatedPreprocessingRoute: AuthenticatedPreprocessingRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
