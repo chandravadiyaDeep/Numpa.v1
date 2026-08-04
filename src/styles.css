@@ -208,16 +208,25 @@
 @utility glass {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  backdrop-filter: blur(18px) saturate(140%);
-  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: var(--shadow-soft), var(--edge-highlight);
 }
 
 @utility panel {
-  background: var(--glass-bg);
+  position: relative;
+  background: var(--gradient-surface);
   border: 1px solid var(--glass-border);
-  border-radius: 1rem;
-  backdrop-filter: blur(18px) saturate(140%);
-  box-shadow: var(--shadow-soft);
+  border-radius: 1.125rem;
+  backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: var(--shadow-soft), var(--edge-highlight);
+  transition:
+    box-shadow 0.3s ease,
+    border-color 0.3s ease,
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  &:hover {
+    box-shadow: var(--shadow-lift), var(--edge-highlight);
+    border-color: color-mix(in oklab, var(--primary) 28%, var(--glass-border));
+  }
 }
 
 @utility lift {
@@ -226,11 +235,12 @@
     box-shadow 0.25s ease,
     border-color 0.25s ease;
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lift);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lift), var(--edge-highlight);
     border-color: color-mix(in oklab, var(--primary) 45%, transparent);
   }
 }
+
 
 @utility text-gradient {
   background: var(--gradient-brand);
