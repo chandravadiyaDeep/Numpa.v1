@@ -18,9 +18,6 @@ export function AuthShell({
       <main className="ambient flex min-h-screen items-center justify-center px-5 py-14">
         <div className="relative z-10 w-full max-w-md">
           <Link to="/" className="mx-auto mb-8 flex w-fit items-center gap-2.5">
-            <span className="grid h-9 w-9 place-items-center rounded-xl brand-gradient shadow-[0_8px_24px_-10px] shadow-primary">
-              <Sparkles className="h-4.5 w-4.5 text-primary-foreground" strokeWidth={2.4} />
-            </span>
             <span className="font-display text-lg font-bold tracking-tight">Numpa</span>
           </Link>
 
