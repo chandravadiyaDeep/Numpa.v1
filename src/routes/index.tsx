@@ -11,7 +11,6 @@ import {
   MessageSquare,
   Search,
   ShieldCheck,
-  Sparkles,
   Table2,
   Wand2,
 } from "lucide-react";

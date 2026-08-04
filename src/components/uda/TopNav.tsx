@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Database, LogOut, Moon, Sun, User, Sparkles } from "lucide-react";
+import { Database, LogOut, Moon, Sun, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { hydrateStudio, useStudio } from "@/lib/studio-store";
 import { supabase } from "@/integrations/supabase/client";

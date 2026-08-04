@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { Sparkles } from "lucide-react";
 
 export function AuthShell({
   title,
