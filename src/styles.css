@@ -112,9 +112,20 @@
     color-mix(in oklab, var(--primary) 22%, transparent),
     transparent 70%
   );
-  --shadow-soft: 0 1px 2px oklch(0 0 0 / 0.06), 0 12px 32px -16px oklch(0.4 0.05 260 / 0.28);
-  --shadow-lift: 0 2px 6px oklch(0 0 0 / 0.08), 0 24px 48px -22px oklch(0.4 0.05 260 / 0.4);
+  --gradient-surface: linear-gradient(
+    160deg,
+    color-mix(in oklab, var(--surface) 96%, var(--primary) 4%),
+    color-mix(in oklab, var(--surface-2) 92%, transparent)
+  );
+  --edge-highlight: inset 0 1px 0 oklch(1 0 0 / 0.7);
+  --shadow-soft:
+    0 1px 2px oklch(0 0 0 / 0.05), 0 6px 14px -8px oklch(0.4 0.05 260 / 0.22),
+    0 18px 40px -22px oklch(0.4 0.05 260 / 0.3);
+  --shadow-lift:
+    0 2px 6px oklch(0 0 0 / 0.08), 0 12px 26px -12px oklch(0.4 0.05 260 / 0.32),
+    0 34px 60px -26px oklch(0.4 0.05 260 / 0.45);
 }
+
 
 .dark {
   --background: oklch(0.16 0.02 262);
@@ -158,8 +169,19 @@
 
   --glass-bg: color-mix(in oklab, var(--surface) 70%, transparent);
   --glass-border: oklch(1 0 0 / 10%);
-  --shadow-soft: 0 1px 2px oklch(0 0 0 / 0.4), 0 16px 40px -20px oklch(0 0 0 / 0.7);
-  --shadow-lift: 0 2px 8px oklch(0 0 0 / 0.5), 0 30px 60px -24px oklch(0 0 0 / 0.8);
+  --gradient-surface: linear-gradient(
+    160deg,
+    color-mix(in oklab, var(--surface) 82%, var(--primary) 6%),
+    color-mix(in oklab, var(--surface-2) 62%, transparent)
+  );
+  --edge-highlight: inset 0 1px 0 oklch(1 0 0 / 0.08);
+  --shadow-soft:
+    0 1px 2px oklch(0 0 0 / 0.35), 0 8px 18px -10px oklch(0 0 0 / 0.5),
+    0 24px 48px -24px oklch(0 0 0 / 0.7);
+  --shadow-lift:
+    0 2px 8px oklch(0 0 0 / 0.45), 0 16px 32px -14px oklch(0 0 0 / 0.6),
+    0 40px 70px -28px oklch(0 0 0 / 0.85);
+
 }
 
 @layer base {
@@ -186,16 +208,25 @@
 @utility glass {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  backdrop-filter: blur(18px) saturate(140%);
-  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: var(--shadow-soft), var(--edge-highlight);
 }
 
 @utility panel {
-  background: var(--glass-bg);
+  position: relative;
+  background: var(--gradient-surface);
   border: 1px solid var(--glass-border);
-  border-radius: 1rem;
-  backdrop-filter: blur(18px) saturate(140%);
-  box-shadow: var(--shadow-soft);
+  border-radius: 1.125rem;
+  backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: var(--shadow-soft), var(--edge-highlight);
+  transition:
+    box-shadow 0.3s ease,
+    border-color 0.3s ease,
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  &:hover {
+    box-shadow: var(--shadow-lift), var(--edge-highlight);
+    border-color: color-mix(in oklab, var(--primary) 28%, var(--glass-border));
+  }
 }
 
 @utility lift {
@@ -204,11 +235,12 @@
     box-shadow 0.25s ease,
     border-color 0.25s ease;
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lift);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lift), var(--edge-highlight);
     border-color: color-mix(in oklab, var(--primary) 45%, transparent);
   }
 }
+
 
 @utility text-gradient {
   background: var(--gradient-brand);
