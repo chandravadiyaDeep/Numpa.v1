@@ -1,27 +1,27 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { lovable } from "@/integrations/lovable/index";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Continue with Google. Uses the managed Lovable OAuth broker on top of the
- * existing Supabase client/session — email + password sign-in is untouched.
+ * Continue with Google. Uses the existing Supabase client's OAuth flow —
+ * email + password sign-in and session handling are untouched.
  */
 export function GoogleButton({ onError }: { onError?: (message: string) => void }) {
   const [loading, setLoading] = useState(false);
 
   const click = async () => {
     setLoading(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
+      },
     });
 
-    if (result.error) {
+    if (error) {
       setLoading(false);
-      onError?.(result.error.message ?? "Google sign-in failed. Try again.");
-      return;
+      onError?.(error.message ?? "Google sign-in failed. Try again.");
     }
-    if (result.redirected) return;
-    window.location.assign("/dashboard");
   };
 
   return (
