@@ -11,7 +11,6 @@ import {
   MessageSquare,
   Search,
   ShieldCheck,
-  Sparkles,
   Table2,
   Wand2,
 } from "lucide-react";
@@ -104,9 +103,6 @@ function Landing() {
       <header className="sticky top-0 z-50 glass border-b">
         <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-6 px-5 lg:px-8">
           <Link to="/" className="flex shrink-0 items-center gap-2.5">
-            <span className="grid h-9 w-9 place-items-center rounded-xl brand-gradient shadow-[0_8px_24px_-10px] shadow-primary">
-              <Sparkles className="h-4.5 w-4.5 text-primary-foreground" strokeWidth={2.4} />
-            </span>
             <span className="font-display text-lg font-bold tracking-tight">Numpa</span>
           </Link>
 

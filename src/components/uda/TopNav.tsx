@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Database, LogOut, Moon, Sun, User, Sparkles } from "lucide-react";
+import { Database, LogOut, Moon, Sun, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { hydrateStudio, useStudio } from "@/lib/studio-store";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,9 +55,6 @@ export function TopNav() {
     <header className="sticky top-0 z-50 glass border-b">
       <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-6 px-5 lg:px-8">
         <Link to="/dashboard" className="flex shrink-0 items-center gap-2.5">
-          <span className="grid h-9 w-9 place-items-center rounded-xl brand-gradient shadow-[0_8px_24px_-10px] shadow-primary">
-            <Sparkles className="h-4.5 w-4.5 text-primary-foreground" strokeWidth={2.4} />
-          </span>
           <span className="font-display text-lg font-bold tracking-tight">Numpa</span>
         </Link>
 
