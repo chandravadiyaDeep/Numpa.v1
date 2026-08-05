@@ -366,18 +366,31 @@ function ChartCanvas({
   if (kind === "Histogram" || kind === "Distribution Plot") {
     const data = histogram(ds, xCol, 14);
     if (!data.length) return <Empty />;
+    const total = data.reduce((s, d) => s + d.count, 0) || 1;
+    const withPct = data.map((d) => ({ ...d, pct: (d.count / total) * 100 }));
+    const tip = (v: number, _n: string, p: { payload?: { pct?: number } }) =>
+      [`${fmtNum(v)} rows (${(p?.payload?.pct ?? 0).toFixed(1)}%)`, "Frequency"] as [string, string];
+    const margin = { top: 16, right: 16, bottom: 34, left: 8 };
     return (
       <ResponsiveContainer width="100%" height="100%">
         {kind === "Histogram" ? (
-          <BarChart data={data}>
+          <BarChart data={withPct} margin={margin}>
             <CartesianGrid vertical={false} stroke="var(--border)" />
-            <XAxis dataKey="label" {...axisProps} />
-            <YAxis {...axisProps} />
-            <Tooltip cursor={{ fill: "var(--secondary)" }} {...tooltipStyle} />
-            <Bar dataKey="count" fill="var(--chart-1)" radius={[6, 6, 0, 0]} />
+            <XAxis dataKey="label" {...axisProps} label={xLabel(`${xCol} (bins)`)} />
+            <YAxis {...axisProps} label={yLabel("Frequency (rows)")} tickFormatter={fmtNum} />
+            <Tooltip
+              cursor={{ fill: "var(--secondary)" }}
+              {...tooltipStyle}
+              labelFormatter={(l) => `${xCol}: ${l}`}
+              formatter={tip}
+            />
+            <Legend verticalAlign="top" height={28} wrapperStyle={labelStyle} />
+            <Bar dataKey="count" name={`Rows per ${xCol} bin`} fill="var(--chart-1)" radius={[6, 6, 0, 0]}>
+              <LabelList dataKey="count" position="top" formatter={fmtNum} style={dataLabelStyle} />
+            </Bar>
           </BarChart>
         ) : (
-          <AreaChart data={data}>
+          <AreaChart data={withPct} margin={margin}>
             <defs>
               <linearGradient id="dist" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="var(--chart-2)" stopOpacity={0.7} />
@@ -385,16 +398,20 @@ function ChartCanvas({
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} stroke="var(--border)" />
-            <XAxis dataKey="label" {...axisProps} />
-            <YAxis {...axisProps} />
-            <Tooltip {...tooltipStyle} />
+            <XAxis dataKey="label" {...axisProps} label={xLabel(`${xCol} (bins)`)} />
+            <YAxis {...axisProps} label={yLabel("Frequency (rows)")} tickFormatter={fmtNum} />
+            <Tooltip {...tooltipStyle} labelFormatter={(l) => `${xCol}: ${l}`} formatter={tip} />
+            <Legend verticalAlign="top" height={28} wrapperStyle={labelStyle} />
             <Area
               type="monotone"
               dataKey="count"
+              name={`Distribution of ${xCol}`}
               stroke="var(--chart-2)"
               strokeWidth={2}
               fill="url(#dist)"
-            />
+            >
+              <LabelList dataKey="count" position="top" formatter={fmtNum} style={dataLabelStyle} />
+            </Area>
           </AreaChart>
         )}
       </ResponsiveContainer>
@@ -408,12 +425,22 @@ function ChartCanvas({
       .map((r) => ({ x: r[xCol] as number, y: r[yCol] as number }));
     return (
       <ResponsiveContainer width="100%" height="100%">
-        <ScatterChart>
+        <ScatterChart margin={{ top: 16, right: 20, bottom: 34, left: 8 }}>
           <CartesianGrid stroke="var(--border)" />
-          <XAxis type="number" dataKey="x" name={xCol} {...axisProps} />
-          <YAxis type="number" dataKey="y" name={yCol} {...axisProps} />
-          <Tooltip cursor={{ strokeDasharray: "3 3" }} {...tooltipStyle} />
-          <Scatter data={data} fill="var(--chart-2)" fillOpacity={0.75} />
+          <XAxis type="number" dataKey="x" name={xCol} {...axisProps} label={xLabel(xCol)} tickFormatter={fmtNum} />
+          <YAxis type="number" dataKey="y" name={yCol} {...axisProps} label={yLabel(yCol)} tickFormatter={fmtNum} />
+          <Tooltip
+            cursor={{ strokeDasharray: "3 3" }}
+            {...tooltipStyle}
+            formatter={(v: number, n: string) => [fmtNum(v), n === "x" ? xCol : n === "y" ? yCol : n]}
+          />
+          <Legend verticalAlign="top" height={28} wrapperStyle={labelStyle} />
+          <Scatter
+            data={data}
+            name={`${yCol} vs ${xCol} (${data.length.toLocaleString()} points)`}
+            fill="var(--chart-2)"
+            fillOpacity={0.75}
+          />
         </ScatterChart>
       </ResponsiveContainer>
     );
@@ -427,12 +454,24 @@ function ChartCanvas({
       .slice(0, 300);
     return (
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data}>
+        <LineChart data={data} margin={{ top: 16, right: 20, bottom: 34, left: 8 }}>
           <CartesianGrid vertical={false} stroke="var(--border)" />
-          <XAxis dataKey="x" {...axisProps} />
-          <YAxis {...axisProps} />
-          <Tooltip {...tooltipStyle} />
-          <Line type="monotone" dataKey="y" stroke="var(--chart-1)" strokeWidth={2} dot={false} />
+          <XAxis dataKey="x" {...axisProps} label={xLabel(xCol)} />
+          <YAxis {...axisProps} label={yLabel(yCol)} tickFormatter={fmtNum} />
+          <Tooltip
+            {...tooltipStyle}
+            labelFormatter={(l) => `${xCol}: ${l}`}
+            formatter={(v: number) => [fmtNum(v), yCol]}
+          />
+          <Legend verticalAlign="top" height={28} wrapperStyle={labelStyle} />
+          <Line
+            type="monotone"
+            dataKey="y"
+            name={`${yCol} by ${xCol}`}
+            stroke="var(--chart-1)"
+            strokeWidth={2}
+            dot={false}
+          />
         </LineChart>
       </ResponsiveContainer>
     );
@@ -441,17 +480,34 @@ function ChartCanvas({
   if (kind === "Bar Chart") {
     const data = categoryCounts(ds, xCol, 12);
     if (!data.length) return <Empty />;
+    const total = data.reduce((s, d) => s + d.value, 0) || 1;
+    const withPct = data.map((d) => ({ ...d, pct: (d.value / total) * 100 }));
     return (
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} layout="vertical" margin={{ left: 24 }}>
+        <BarChart data={withPct} layout="vertical" margin={{ top: 16, right: 76, bottom: 34, left: 24 }}>
           <CartesianGrid horizontal={false} stroke="var(--border)" />
-          <XAxis type="number" {...axisProps} />
-          <YAxis type="category" dataKey="name" width={110} {...axisProps} />
-          <Tooltip cursor={{ fill: "var(--secondary)" }} {...tooltipStyle} />
-          <Bar dataKey="value" radius={[0, 6, 6, 0]}>
-            {data.map((_, i) => (
+          <XAxis type="number" {...axisProps} label={xLabel("Count (rows)")} tickFormatter={fmtNum} />
+          <YAxis type="category" dataKey="name" width={110} {...axisProps} label={yLabel(xCol)} />
+          <Tooltip
+            cursor={{ fill: "var(--secondary)" }}
+            {...tooltipStyle}
+            labelFormatter={(l) => `${xCol}: ${l}`}
+            formatter={(v: number, _n: string, p: { payload?: { pct?: number } }) => [
+              `${fmtNum(v)} rows (${(p?.payload?.pct ?? 0).toFixed(1)}%)`,
+              "Count",
+            ]}
+          />
+          <Legend verticalAlign="top" height={28} wrapperStyle={labelStyle} />
+          <Bar dataKey="value" name={`Rows per ${xCol}`} radius={[0, 6, 6, 0]}>
+            {withPct.map((_, i) => (
               <Cell key={i} fill={palette[i % palette.length]} />
             ))}
+            <LabelList
+              dataKey="value"
+              position="right"
+              style={dataLabelStyle}
+              formatter={(v: number) => `${fmtNum(v)} (${((v / total) * 100).toFixed(1)}%)`}
+            />
           </Bar>
         </BarChart>
       </ResponsiveContainer>
@@ -461,26 +517,53 @@ function ChartCanvas({
   if (kind === "Pie Chart" || kind === "Donut Chart") {
     const data = categoryCounts(ds, xCol);
     if (!data.length) return <Empty />;
+    const total = data.reduce((s, d) => s + d.value, 0) || 1;
     return (
       <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Tooltip {...tooltipStyle} />
+        <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+          <Tooltip
+            {...tooltipStyle}
+            formatter={(v: number, n: string) => [
+              `${fmtNum(v)} rows (${((v / total) * 100).toFixed(1)}%)`,
+              n,
+            ]}
+          />
+          <Legend
+            verticalAlign="bottom"
+            height={34}
+            wrapperStyle={labelStyle}
+            formatter={(value: string, entry: { payload?: { value?: number } }) =>
+              `${value} — ${fmtNum(entry?.payload?.value ?? 0)} (${(((entry?.payload?.value ?? 0) / total) * 100).toFixed(1)}%)`
+            }
+          />
           <Pie
             data={data}
             dataKey="value"
             nameKey="name"
-            innerRadius={kind === "Donut Chart" ? 80 : 0}
-            outerRadius={140}
+            innerRadius={kind === "Donut Chart" ? 70 : 0}
+            outerRadius={120}
             paddingAngle={kind === "Donut Chart" ? 3 : 1}
+            labelLine={{ stroke: "var(--border)" }}
+            label={({ name, value, percent }: { name?: string; value?: number; percent?: number }) =>
+              `${name}: ${fmtNum(Number(value ?? 0))} (${((percent ?? 0) * 100).toFixed(1)}%)`
+            }
           >
             {data.map((_, i) => (
               <Cell key={i} fill={palette[i % palette.length]} stroke="var(--background)" strokeWidth={2} />
             ))}
+            {kind === "Donut Chart" && (
+              <Label
+                position="center"
+                value={`${xCol} · ${fmtNum(total)} rows`}
+                style={{ ...labelStyle, fontSize: 12, textAnchor: "middle" }}
+              />
+            )}
           </Pie>
         </PieChart>
       </ResponsiveContainer>
     );
   }
+
 
 
   if (kind === "Box Plot") {
