@@ -16,8 +16,14 @@ function saveBlob(blob: Blob, filename: string) {
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
+  a.rel = "noopener";
+  a.style.display = "none";
+  document.body.appendChild(a);
   a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  setTimeout(() => {
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, 2000);
 }
 
 export function baseName(ds: Dataset) {
@@ -163,39 +169,43 @@ function tokenOverrideCss(): string {
 
 async function captureElement(el: HTMLElement): Promise<HTMLCanvasElement> {
   const { default: html2canvas } = await import("html2canvas");
-  // Swap the oklch design tokens for identical rgb values in the live document:
-  // the rasteriser cannot parse modern colour functions, and the clone it takes
-  // inherits whatever the page resolves at capture time.
-  const patch = document.createElement("style");
-  patch.textContent = tokenOverrideCss();
-  document.head.appendChild(patch);
-  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-  try {
-    const bg = oklchToRgb(window.getComputedStyle(document.body).backgroundColor || "#0b1020");
-    return await html2canvas(el, {
-      backgroundColor: bg,
-      scale: Math.min(window.devicePixelRatio || 1, 2) * 2,
-      logging: false,
-      useCORS: true,
-      onclone: (doc: Document) => {
-        inlineModernColors(doc.documentElement as unknown as HTMLElement);
-      },
-    });
-  } finally {
-    patch.remove();
-  }
+  // The rasteriser cannot parse modern colour functions, so the oklch design
+  // tokens are rewritten as rgb inside the CLONED document only — patching the
+  // live page made the whole UI flash while the capture ran.
+  const css = tokenOverrideCss();
+  const bg = oklchToRgb(window.getComputedStyle(document.body).backgroundColor || "#0b1020");
+  return await html2canvas(el, {
+    backgroundColor: bg,
+    scale: Math.min(window.devicePixelRatio || 1, 2) * 2,
+    logging: false,
+    useCORS: true,
+    onclone: (doc: Document) => {
+      const patch = doc.createElement("style");
+      patch.textContent = css;
+      (doc.head ?? doc.documentElement).appendChild(patch);
+      inlineModernColors(doc.documentElement as unknown as HTMLElement);
+    },
+  });
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, mime: string, quality?: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("Could not encode image"))),
+      mime,
+      quality,
+    );
+  });
 }
 
 /** Save a rendered chart panel as a PNG/JPEG image. */
 export async function exportElementImage(el: HTMLElement, name: string, format: ImageFormat = "png") {
   const canvas = await captureElement(el);
   const mime = format === "png" ? "image/png" : "image/jpeg";
-  const dataUrl = canvas.toDataURL(mime, 0.95);
-  const a = document.createElement("a");
-  a.href = dataUrl;
-  a.download = `${name}.${format}`;
-  a.click();
+  // Blob download: very large data: URLs are silently dropped by some browsers.
+  saveBlob(await canvasToBlob(canvas, mime, 0.95), `${name}.${format}`);
 }
+
 
 /** Save a rendered chart panel into a single-page landscape PDF. */
 export async function exportElementPdf(el: HTMLElement, name: string, title: string, subtitle?: string) {
