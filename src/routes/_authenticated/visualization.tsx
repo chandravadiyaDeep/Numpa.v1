@@ -151,14 +151,13 @@ const dataLabelStyle = { fill: "var(--foreground)", fontSize: 11 };
 const fmtNum = (v: number) =>
   Math.abs(v) >= 1000 || Number.isInteger(v) ? v.toLocaleString() : Number(v.toFixed(2)).toLocaleString();
 
-/** Bottom X-axis title. */
-const AxisLabelX = ({ value }: { value: string }) => (
-  <Label value={value} position="insideBottom" offset={-6} style={labelStyle} />
-);
-/** Rotated Y-axis title. */
-const AxisLabelY = ({ value }: { value: string }) => (
-  <Label value={value} angle={-90} position="insideLeft" style={{ ...labelStyle, textAnchor: "middle" }} />
-);
+const xLabel = (value: string) => ({ value, position: "insideBottom" as const, offset: -6, style: labelStyle });
+const yLabel = (value: string) => ({
+  value,
+  angle: -90,
+  position: "insideLeft" as const,
+  style: { ...labelStyle, textAnchor: "middle" as const },
+});
 
 function VisualizationPage() {
   const ds = useActiveDataset();
