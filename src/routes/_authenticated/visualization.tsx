@@ -143,6 +143,23 @@ const tooltipStyle = {
   },
 };
 
+/* ------------------------------ chart labels ------------------------------ */
+
+const labelStyle = { fill: "var(--muted-foreground)", fontSize: 12 };
+const dataLabelStyle = { fill: "var(--foreground)", fontSize: 11 };
+
+const fmtNum = (v: number) =>
+  Math.abs(v) >= 1000 || Number.isInteger(v) ? v.toLocaleString() : Number(v.toFixed(2)).toLocaleString();
+
+/** Bottom X-axis title. */
+const AxisLabelX = ({ value }: { value: string }) => (
+  <Label value={value} position="insideBottom" offset={-6} style={labelStyle} />
+);
+/** Rotated Y-axis title. */
+const AxisLabelY = ({ value }: { value: string }) => (
+  <Label value={value} angle={-90} position="insideLeft" style={{ ...labelStyle, textAnchor: "middle" }} />
+);
+
 function VisualizationPage() {
   const ds = useActiveDataset();
   const [kind, setKind] = useState<ChartKind>("Histogram");
