@@ -612,7 +612,22 @@ function ChartCanvas({
   const matrix = correlationMatrix(ds, cols);
   return (
     <div className="h-full overflow-auto scroll-slim">
+      <div className="mb-3 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+        <span className="font-medium text-foreground">Pearson correlation (r) between numeric columns</span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-3 w-6 rounded" style={{ background: "var(--chart-5)" }} /> −1 negative
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-3 w-6 rounded bg-secondary" /> 0 none
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-3 w-6 rounded" style={{ background: "var(--chart-1)" }} /> +1 positive
+        </span>
+      </div>
       <table className="border-separate border-spacing-1 text-xs">
+        <caption className="caption-bottom pt-3 text-left text-[11px] text-muted-foreground">
+          Rows and columns are dataset features; each cell shows r rounded to 2 decimals.
+        </caption>
         <thead>
           <tr>
             <th />
