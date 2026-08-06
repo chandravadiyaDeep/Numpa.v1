@@ -324,6 +324,8 @@ function PreprocessingPage() {
         </aside>
       </div>
 
+      <SmartRecommendations />
+
       {/* BOTTOM — run */}
       <div className="panel mt-6 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 p-5">
         <div className="min-w-0">
