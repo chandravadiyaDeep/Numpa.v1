@@ -16,6 +16,7 @@ import { PageShell } from "@/components/uda/PageShell";
 import { ExportMenu } from "@/components/uda/ExportMenu";
 import { DATA_FORMATS, exportDataset } from "@/lib/export";
 import { OpIcon } from "@/components/uda/OpIcon";
+import { SmartRecommendations } from "@/components/uda/SmartRecommendations";
 import { store, useStudio } from "@/lib/studio-store";
 import {
   METHODS_WITH_VALUE,
@@ -322,6 +323,8 @@ function PreprocessingPage() {
           )}
         </aside>
       </div>
+
+      <SmartRecommendations />
 
       {/* BOTTOM — run */}
       <div className="panel mt-6 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 p-5">
