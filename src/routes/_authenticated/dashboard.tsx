@@ -17,6 +17,7 @@ import { Uploader } from "@/components/uda/Uploader";
 import { parseCsv, qualityScore } from "@/lib/dataset";
 import { healthSummary, readinessReport } from "@/lib/insights";
 import { store, useStudio } from "@/lib/studio-store";
+import { ActivityStatsSection } from "@/components/uda/ActivityStatsSection";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -177,6 +178,8 @@ function Index() {
               hint={processed ? "Processed copy active" : steps.length ? "Pending run" : "Raw dataset"}
             />
           </div>
+
+          <ActivityStatsSection />
 
           {/* Insight cards + entry points */}
           <div className="relative z-10 mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
