@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -33,6 +33,7 @@ import {
 } from "@/lib/export";
 
 import { useActiveDataset } from "@/lib/studio-store";
+import { trackActivityOnce } from "@/lib/activity-stats";
 import {
   categoryCounts,
   correlationMatrix,
@@ -165,6 +166,10 @@ function VisualizationPage() {
   const captureRef = useRef<HTMLDivElement>(null);
   const [x, setX] = useState("");
   const [y, setY] = useState("");
+
+  useEffect(() => {
+    if (ds) trackActivityOnce("files_visualized", `${ds.name}:${ds.rows.length}x${ds.columns.length}`);
+  }, [ds]);
 
   const profiles = useMemo(() => (ds ? profileDataset(ds) : []), [ds]);
   const recommendations = useMemo(() => recommendCharts(profiles), [profiles]);

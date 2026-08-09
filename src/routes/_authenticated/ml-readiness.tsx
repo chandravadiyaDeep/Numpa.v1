@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { AlertTriangle, CheckCircle2, Cpu, Download, ListChecks, XCircle } from "lucide-react";
 import { PageShell } from "@/components/uda/PageShell";
 import { AnimatedNumber } from "@/components/uda/AnimatedNumber";
@@ -7,6 +8,7 @@ import { profileDataset } from "@/lib/dataset";
 import { ExportMenu } from "@/components/uda/ExportMenu";
 import { DATA_FORMATS, exportDataset, exportReadinessPdf } from "@/lib/export";
 import { readinessReport, type Status } from "@/lib/insights";
+import { trackActivityOnce } from "@/lib/activity-stats";
 
 export const Route = createFileRoute("/_authenticated/ml-readiness")({
   head: () => ({
@@ -36,6 +38,10 @@ const TONE: Record<Status, { icon: typeof CheckCircle2; className: string }> = {
 function MlReadinessPage() {
   const ds = useActiveDataset();
   const { processed, target } = useStudio();
+
+  useEffect(() => {
+    if (ds) trackActivityOnce("ml_readiness_runs", `${ds.name}:${ds.rows.length}x${ds.columns.length}`);
+  }, [ds]);
 
   if (!ds)
     return (
