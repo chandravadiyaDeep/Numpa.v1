@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_stats: {
+        Row: {
+          files_analysed: number
+          files_exported: number
+          files_preprocessed: number
+          files_visualized: number
+          ml_readiness_runs: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          files_analysed?: number
+          files_exported?: number
+          files_preprocessed?: number
+          files_visualized?: number
+          ml_readiness_runs?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          files_analysed?: number
+          files_exported?: number
+          files_preprocessed?: number
+          files_visualized?: number
+          ml_readiness_runs?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       feedback: {
         Row: {
           created_at: string
@@ -70,7 +100,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_activity_stat: {
+        Args: { _metric: string }
+        Returns: {
+          files_analysed: number
+          files_exported: number
+          files_preprocessed: number
+          files_visualized: number
+          ml_readiness_runs: number
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "activity_stats"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       [_ in never]: never
