@@ -17,6 +17,7 @@ import { ExportMenu } from "@/components/uda/ExportMenu";
 import { DATA_FORMATS, exportDataset } from "@/lib/export";
 import { OpIcon } from "@/components/uda/OpIcon";
 import { SmartRecommendations } from "@/components/uda/SmartRecommendations";
+import { trackActivity } from "@/lib/activity-stats";
 import { store, useStudio } from "@/lib/studio-store";
 import {
   METHODS_WITH_VALUE,
@@ -335,7 +336,10 @@ function PreprocessingPage() {
           </p>
         </div>
         <button
-          onClick={() => store.run()}
+          onClick={() => {
+            store.run();
+            void trackActivity("files_preprocessed");
+          }}
           disabled={steps.length === 0}
           className="inline-flex h-12 shrink-0 items-center gap-2 rounded-xl brand-gradient px-8 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"
         >

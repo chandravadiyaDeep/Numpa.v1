@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -21,6 +21,7 @@ import {
   qualityScore,
 } from "@/lib/dataset";
 import { covariance, strongestRelationships } from "@/lib/insights";
+import { trackActivityOnce } from "@/lib/activity-stats";
 
 
 export const Route = createFileRoute("/_authenticated/analysis")({
@@ -94,6 +95,10 @@ function AnalysisPage() {
   const ds = useActiveDataset();
   const [view, setView] = useState<"core" | "distribution" | "quality">("core");
   const relationships = useMemo(() => (ds ? strongestRelationships(ds) : []), [ds]);
+
+  useEffect(() => {
+    if (ds) trackActivityOnce("files_analysed", `${ds.name}:${ds.rows.length}x${ds.columns.length}`);
+  }, [ds]);
 
   if (!ds)
     return (

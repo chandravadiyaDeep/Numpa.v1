@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
+import { trackActivity } from "@/lib/activity-stats";
 
 export interface ExportOption {
   id: string;
@@ -44,6 +45,7 @@ export function ExportMenu({
     try {
       await new Promise((r) => requestAnimationFrame(r));
       await opt.onSelect();
+      void trackActivity("files_exported");
     } catch (err) {
       console.error("Export failed", err);
     } finally {
