@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 import type { Dataset, Step } from "./dataset";
-import { runPipeline } from "./dataset";
+import { runPipelineAsync } from "./dataset";
 
 interface State {
   dataset: Dataset | null;
@@ -9,9 +9,25 @@ interface State {
   target: string | null;
   past: Step[][];
   future: Step[][];
+  /** True while a pipeline run is in flight (long runs no longer block the UI). */
+  running: boolean;
+  /** Completed steps / total steps for the current run. */
+  progress: { done: number; total: number } | null;
+  /** Set when a run fails or is cancelled. */
+  runError: string | null;
 }
 
-const empty: State = { dataset: null, steps: [], processed: null, target: null, past: [], future: [] };
+const empty: State = {
+  dataset: null,
+  steps: [],
+  processed: null,
+  target: null,
+  past: [],
+  future: [],
+  running: false,
+  progress: null,
+  runError: null,
+};
 
 let state: State = empty;
 const listeners = new Set<() => void>();
