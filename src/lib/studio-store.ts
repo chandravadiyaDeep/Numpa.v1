@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 import type { Dataset, Step } from "./dataset";
-import { runPipeline } from "./dataset";
+import { runPipelineAsync } from "./dataset";
 
 interface State {
   dataset: Dataset | null;
@@ -9,9 +9,25 @@ interface State {
   target: string | null;
   past: Step[][];
   future: Step[][];
+  /** True while a pipeline run is in flight (long runs no longer block the UI). */
+  running: boolean;
+  /** Completed steps / total steps for the current run. */
+  progress: { done: number; total: number } | null;
+  /** Set when a run fails or is cancelled. */
+  runError: string | null;
 }
 
-const empty: State = { dataset: null, steps: [], processed: null, target: null, past: [], future: [] };
+const empty: State = {
+  dataset: null,
+  steps: [],
+  processed: null,
+  target: null,
+  past: [],
+  future: [],
+  running: false,
+  progress: null,
+  runError: null,
+};
 
 let state: State = empty;
 const listeners = new Set<() => void>();
@@ -28,9 +44,13 @@ const commit = (steps: Step[]) =>
 
 export const store = {
   setDataset(dataset: Dataset) {
+    runController?.abort();
+    runController = null;
     set({ ...empty, dataset });
   },
   clear() {
+    runController?.abort();
+    runController = null;
     set({ ...empty });
   },
   setTarget(target: string | null) {
@@ -69,11 +89,52 @@ export const store = {
     if (!state.steps.length && !state.processed) return;
     set({ steps: [], processed: null, past: [...state.past, state.steps], future: [] });
   },
+  /**
+   * Execute the pipeline off the render path. Fire-and-forget for callers
+   * (same call signature as before); progress and errors land in the store.
+   */
   run() {
-    if (!state.dataset) return;
-    set({ processed: runPipeline(state.dataset, state.steps) });
+    if (!state.dataset || state.running) return;
+    const controller = new AbortController();
+    runController?.abort();
+    runController = controller;
+    const source = state.dataset;
+    const steps = state.steps;
+    set({ running: true, progress: { done: 0, total: steps.length }, runError: null });
+
+    void runPipelineAsync(source, steps, {
+      signal: controller.signal,
+      onProgress: (done, total) => {
+        if (runController === controller) set({ progress: { done, total } });
+      },
+    })
+      .then((processed) => {
+        if (runController !== controller) return;
+        set({ processed, running: false, progress: null });
+      })
+      .catch((e: unknown) => {
+        if (runController !== controller) return;
+        const aborted = e instanceof DOMException && e.name === "AbortError";
+        set({
+          running: false,
+          progress: null,
+          runError: aborted
+            ? null
+            : e instanceof RangeError
+              ? "This dataset is too large to transform in the browser. Try fewer steps or a smaller extract."
+              : "The pipeline could not be completed.",
+        });
+      });
+  },
+  /** Abort an in-flight run and release its intermediate datasets. */
+  cancelRun() {
+    runController?.abort();
+    runController = null;
+    if (state.running) set({ running: false, progress: null, runError: null });
   },
 };
+
+let runController: AbortController | null = null;
 
 const subscribe = (l: () => void) => {
   listeners.add(l);
@@ -99,6 +160,22 @@ export function useActiveDataset() {
 const KEY = "uda-studio-state";
 let hydrated = false;
 
+/**
+ * sessionStorage holds ~5 MB, so anything beyond a small dataset can never be
+ * persisted anyway. Previously every single state change re-serialised the
+ * entire dataset (a full JSON.stringify of every row, synchronously, on each
+ * emit) only for the write to throw QuotaExceeded — the dominant source of
+ * multi-second freezes on large files.
+ *
+ * Now: writes are debounced, skipped entirely once the row count exceeds what
+ * storage can realistically take, and a size probe stops us stringifying data
+ * that will be rejected.
+ */
+const PERSIST_MAX_ROWS = 20_000;
+const PERSIST_MAX_CHARS = 3_500_000;
+
+const persistable = (ds: Dataset | null) => !ds || ds.rows.length <= PERSIST_MAX_ROWS;
+
 /** Restore the workspace after a page reload. Call once, client-side. */
 export function hydrateStudio() {
   if (hydrated || typeof window === "undefined") return;
@@ -107,17 +184,44 @@ export function hydrateStudio() {
     const raw = window.sessionStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<State>;
-      if (parsed?.dataset) set({ ...empty, ...parsed, past: [], future: [] });
+      if (parsed?.dataset)
+        set({
+          ...empty,
+          ...parsed,
+          past: [],
+          future: [],
+          running: false,
+          progress: null,
+          runError: null,
+        });
     }
   } catch {
     /* ignore corrupt state */
   }
+
+  let timer: ReturnType<typeof setTimeout> | null = null;
   listeners.add(() => {
-    try {
-      const { dataset, steps, processed, target } = state;
-      window.sessionStorage.setItem(KEY, JSON.stringify({ dataset, steps, processed, target }));
-    } catch {
-      /* quota exceeded — keep working in memory */
-    }
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      const { dataset, steps, processed, target, running } = state;
+      if (running) return;
+      try {
+        if (!persistable(dataset) || !persistable(processed)) {
+          // Too big to snapshot: keep the session key clean rather than
+          // leaving a stale, mismatched dataset behind.
+          window.sessionStorage.removeItem(KEY);
+          return;
+        }
+        const payload = JSON.stringify({ dataset, steps, processed, target });
+        if (payload.length > PERSIST_MAX_CHARS) {
+          window.sessionStorage.removeItem(KEY);
+          return;
+        }
+        window.sessionStorage.setItem(KEY, payload);
+      } catch {
+        /* quota exceeded — keep working in memory */
+      }
+    }, 400);
   });
 }

@@ -1,4 +1,4 @@
-import { parseCsv, type Dataset, type Row } from "./dataset";
+import type { Dataset, Row } from "./dataset";
 
 export type SourceFormat = "csv" | "xlsx" | "json";
 
@@ -74,26 +74,93 @@ async function parseWorkbook(buffer: ArrayBuffer, name: string): Promise<Dataset
   return fromRecords(records, name);
 }
 
+export interface ParseProgress {
+  /** 0-1 where known, otherwise undefined for formats that can't stream. */
+  ratio?: number;
+  rows: number;
+  phase: "reading" | "parsing" | "done";
+}
+
+export interface ParseOptions {
+  onProgress?: (p: ParseProgress) => void;
+  signal?: AbortSignal;
+}
+
+/**
+ * Per-format size ceilings. CSV/TSV stream row-by-row so it can go far higher
+ * than the buffered formats, which must be fully materialised by their
+ * decoders before any row exists.
+ */
+const MAX_BYTES: Record<SourceFormat, number> = {
+  csv: 400 * 1024 * 1024,
+  xlsx: 60 * 1024 * 1024,
+  json: 80 * 1024 * 1024,
+};
+
+const mb = (bytes: number) => `${Math.round(bytes / (1024 * 1024))} MB`;
+
 /** File → validate → detect → parse → normalise → Dataset. Throws ParseError with a readable message. */
-export async function parseFile(file: File): Promise<Dataset> {
+export async function parseFile(file: File, opts: ParseOptions = {}): Promise<Dataset> {
   if (!file.size) throw new ParseError("That file is empty.");
-  if (file.size > 25 * 1024 * 1024)
-    throw new ParseError("File is larger than 25 MB — try a smaller extract.");
 
   const format = detectFormat(file.name);
   if (!format)
     throw new ParseError("Unsupported file type. Upload a CSV, XLSX/XLS or JSON file.");
 
+  if (file.size > MAX_BYTES[format])
+    throw new ParseError(
+      format === "csv"
+        ? `File is larger than ${mb(MAX_BYTES.csv)} — try a smaller extract.`
+        : `${format.toUpperCase()} files are read whole and are capped at ${mb(
+            MAX_BYTES[format],
+          )}. Convert to CSV for larger datasets.`,
+    );
+
   let ds: Dataset;
-  if (format === "xlsx") ds = await parseWorkbook(await file.arrayBuffer(), file.name);
-  else {
-    const text = await file.text();
-    if (!text.trim()) throw new ParseError("That file is empty.");
-    ds = format === "json" ? parseJsonText(text, file.name) : parseCsv(text, file.name);
+  try {
+    if (format === "csv") {
+      // Streamed: constant memory, cancellable, reports progress.
+      const { parseDelimitedStream, CsvLimitError } = await import("./csv-stream");
+      try {
+        ds = await parseDelimitedStream(file, file.name, {
+          signal: opts.signal,
+          onProgress: ({ bytes, totalBytes, rows }) =>
+            opts.onProgress?.({
+              ratio: totalBytes ? bytes / totalBytes : undefined,
+              rows,
+              phase: "reading",
+            }),
+        });
+      } catch (e) {
+        if (e instanceof CsvLimitError) throw new ParseError(e.message);
+        throw e;
+      }
+    } else if (format === "xlsx") {
+      opts.onProgress?.({ rows: 0, phase: "reading" });
+      const buffer = await file.arrayBuffer();
+      opts.onProgress?.({ rows: 0, phase: "parsing" });
+      ds = await parseWorkbook(buffer, file.name);
+    } else {
+      opts.onProgress?.({ rows: 0, phase: "reading" });
+      const text = await file.text();
+      if (!text.trim()) throw new ParseError("That file is empty.");
+      opts.onProgress?.({ rows: 0, phase: "parsing" });
+      ds = parseJsonText(text, file.name);
+    }
+  } catch (e) {
+    if (e instanceof ParseError) throw e;
+    if (e instanceof DOMException && e.name === "AbortError") throw e;
+    if (e instanceof RangeError)
+      throw new ParseError(
+        "This dataset is too large for the browser to hold in memory. Try a smaller extract or fewer columns.",
+      );
+    throw new ParseError("That file could not be read.");
   }
 
   if (!ds.columns.length || !ds.rows.length)
     throw new ParseError("No parsable rows were found in that file.");
+
+  opts.onProgress?.({ ratio: 1, rows: ds.rows.length, phase: "done" });
   return ds;
 }
 

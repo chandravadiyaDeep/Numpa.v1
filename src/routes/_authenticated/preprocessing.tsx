@@ -57,7 +57,7 @@ const VALUE_HINT: Record<string, { label: string; placeholder: string }> = {
 };
 
 function PreprocessingPage() {
-  const { dataset, steps, processed, past, future } = useStudio();
+  const { dataset, steps, processed, past, future, running, progress, runError } = useStudio();
   const [op, setOp] = useState<OperationId>("missing");
   const [column, setColumn] = useState("");
   const [method, setMethod] = useState("median");
@@ -332,7 +332,10 @@ function PreprocessingPage() {
         <div className="min-w-0">
           <p className="text-sm font-semibold">Execute pipeline</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {steps.length} step(s) will run in order against {dataset?.rows.length.toLocaleString()} rows.
+            {running && progress
+              ? `Running step ${progress.done} of ${progress.total}…`
+              : (runError ??
+                `${steps.length} step(s) will run in order against ${dataset?.rows.length.toLocaleString()} rows.`)}
           </p>
         </div>
         <button
@@ -340,11 +343,11 @@ function PreprocessingPage() {
             store.run();
             void trackActivity("files_preprocessed");
           }}
-          disabled={steps.length === 0}
+          disabled={steps.length === 0 || running}
           className="inline-flex h-12 shrink-0 items-center gap-2 rounded-xl brand-gradient px-8 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"
         >
           <Play className="h-4 w-4 fill-current" />
-          Run Pipeline
+          {running ? "Running…" : "Run Pipeline"}
         </button>
       </div>
 

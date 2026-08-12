@@ -20,16 +20,31 @@ export function Uploader({
   const [busy, setBusy] = useState(false);
   const [drag, setDrag] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
 
   const load = async (file: File) => {
     setError(null);
+    setStatus(null);
     setBusy(true);
     try {
-      store.setDataset(await parseFile(file));
+      const ds = await parseFile(file, {
+        onProgress: (p) => {
+          if (p.phase === "done") return setStatus(null);
+          const pct = p.ratio !== undefined ? ` ${Math.round(p.ratio * 100)}%` : "";
+          setStatus(
+            p.rows
+              ? `Reading${pct} · ${p.rows.toLocaleString()} rows`
+              : `${p.phase === "parsing" ? "Parsing" : "Reading"}${pct}`,
+          );
+        },
+      });
+      store.setDataset(ds);
       onLoaded?.();
     } catch (e) {
-      setError(e instanceof ParseError ? e.message : "That file could not be read.");
+      if (e instanceof DOMException && e.name === "AbortError") setError(null);
+      else setError(e instanceof ParseError ? e.message : "That file could not be read.");
     } finally {
+      setStatus(null);
       setBusy(false);
     }
   };
@@ -60,6 +75,9 @@ export function Uploader({
           {label}
         </button>
         {input}
+        {status && !error && (
+          <p className="mt-2 max-w-xs text-right text-xs text-muted-foreground">{status}</p>
+        )}
         {error && <p className="mt-2 max-w-xs text-right text-xs text-destructive">{error}</p>}
       </div>
     );
@@ -103,6 +121,7 @@ export function Uploader({
         {label}
       </button>
       {input}
+      {status && !error && <p className="text-sm text-muted-foreground">{status}</p>}
       {error && <p className="text-sm text-destructive">{error}</p>}
     </div>
   );

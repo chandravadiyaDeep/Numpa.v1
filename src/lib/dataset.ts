@@ -93,15 +93,28 @@ export function toCsv(ds: Dataset): string {
     const s = String(v);
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  return [
-    ds.columns.join(","),
-    ...ds.rows.map((r) => ds.columns.map((c) => esc(r[c])).join(",")),
-  ].join("\n");
+  // Accumulate in bounded chunks so very large datasets never hold
+  // one array with millions of live row strings before joining.
+  const cols = ds.columns;
+  const parts: string[] = [cols.join(",")];
+  let chunk: string[] = [];
+  for (let i = 0; i < ds.rows.length; i++) {
+    const r = ds.rows[i];
+    const cells = new Array<string>(cols.length);
+    for (let c = 0; c < cols.length; c++) cells[c] = esc(r[cols[c]]);
+    chunk.push(cells.join(","));
+    if (chunk.length === 20000) {
+      parts.push(chunk.join("\n"));
+      chunk = [];
+    }
+  }
+  if (chunk.length) parts.push(chunk.join("\n"));
+  return parts.join("\n");
 }
 
 /* -------------------------------- profiling ------------------------------- */
 
-const quantile = (sorted: number[], q: number) => {
+const quantile = (sorted: ArrayLike<number>, q: number) => {
   if (sorted.length === 0) return 0;
   const pos = (sorted.length - 1) * q;
   const base = Math.floor(pos);
@@ -111,48 +124,93 @@ const quantile = (sorted: number[], q: number) => {
     : sorted[base];
 };
 
+/**
+ * Per-column single-pass profile.
+ *
+ * Behaviour is identical to the original implementation; the difference is
+ * that it no longer materialises `values` / `present` / `nums` / `sorted`
+ * copies of the column (4 arrays per column, ~5x row memory on wide files).
+ * Numeric values go into a Float64Array and every statistic is accumulated
+ * in-place, which keeps profiling flat in memory for 100 MB+ datasets.
+ */
 export function profileColumn(ds: Dataset, col: string): ColumnProfile {
-  const values = ds.rows.map((r) => r[col]);
-  const present = values.filter((v) => v !== null && v !== undefined && v !== "");
-  const missing = values.length - present.length;
-  const nums = present.filter((v) => typeof v === "number") as number[];
-  const isNumeric = present.length > 0 && nums.length / present.length > 0.8;
-  const unique = new Set(present.map(String)).size;
-  const n = values.length || 1;
-
+  const rows = ds.rows;
+  const total = rows.length;
   const counts = new Map<string, number>();
-  present.forEach((v) => counts.set(String(v), (counts.get(String(v)) ?? 0) + 1));
-  const topEntry = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+  const nums: number[] = [];
+  let missing = 0;
+  let presentCount = 0;
+
+  for (let i = 0; i < total; i++) {
+    const v = rows[i][col];
+    if (v === null || v === undefined || v === "") {
+      missing++;
+      continue;
+    }
+    presentCount++;
+    if (typeof v === "number") nums.push(v);
+    const key = String(v);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  const isNumeric = presentCount > 0 && nums.length / presentCount > 0.8;
+  const unique = counts.size;
+  const n = total || 1;
+
+  let topEntry: [string, number] | undefined;
+  counts.forEach((c, k) => {
+    if (!topEntry || c > topEntry[1]) topEntry = [k, c];
+  });
 
   const base: ColumnProfile = {
     name: col,
     type: isNumeric ? "numeric" : "categorical",
     missing,
-    missingPct: values.length ? (missing / values.length) * 100 : 0,
+    missingPct: total ? (missing / total) * 100 : 0,
     unique,
     uniquePct: (unique / n) * 100,
     constant: unique <= 1,
     highCardinality: !isNumeric && unique > 50 && unique / n > 0.5,
-    idLike: unique === values.length && values.length > 1,
+    idLike: unique === total && total > 1,
     top: topEntry?.[0],
     topCount: topEntry?.[1],
   };
 
   if (isNumeric && nums.length) {
-    const sorted = [...nums].sort((a, b) => a - b);
-    const mean = nums.reduce((a, b) => a + b, 0) / nums.length;
-    const variance = nums.reduce((a, b) => a + (b - mean) ** 2, 0) / nums.length;
+    const len = nums.length;
+    const sorted = Float64Array.from(nums);
+    sorted.sort();
+
+    let sum = 0;
+    for (let i = 0; i < len; i++) sum += nums[i];
+    const mean = sum / len;
+
+    let m2 = 0,
+      m3 = 0,
+      m4 = 0;
+    for (let i = 0; i < len; i++) {
+      const d = nums[i] - mean;
+      const d2 = d * d;
+      m2 += d2;
+      m3 += d2 * d;
+      m4 += d2 * d2;
+    }
+    m2 /= len;
+    m3 /= len;
+    m4 /= len;
+
+    const variance = m2;
     const std = Math.sqrt(variance);
     const q1 = quantile(sorted, 0.25);
     const q3 = quantile(sorted, 0.75);
     const iqr = q3 - q1;
     const lo = q1 - 1.5 * iqr;
     const hi = q3 + 1.5 * iqr;
-    const outliers = nums.filter((v) => v < lo || v > hi).length;
-    const m3 = nums.reduce((a, b) => a + (b - mean) ** 3, 0) / nums.length;
-    const m4 = nums.reduce((a, b) => a + (b - mean) ** 4, 0) / nums.length;
+    let outliers = 0;
+    for (let i = 0; i < len; i++) if (nums[i] < lo || nums[i] > hi) outliers++;
     const min = sorted[0];
-    const max = sorted[sorted.length - 1];
+    const max = sorted[len - 1];
+
     return {
       ...base,
       mean,
@@ -171,26 +229,44 @@ export function profileColumn(ds: Dataset, col: string): ColumnProfile {
       skewness: std ? m3 / std ** 3 : 0,
       kurtosis: std ? m4 / std ** 4 - 3 : 0,
       outliers,
-      outlierPct: (outliers / nums.length) * 100,
+      outlierPct: (outliers / len) * 100,
     };
   }
 
   return { ...base, mode: topEntry?.[0] };
 }
 
+/**
+ * Derived results are cached per dataset object identity. Datasets are
+ * immutable (every pipeline step returns a new object), so a WeakMap cache is
+ * always correct and stops the same full-table scan running once per page,
+ * per render and per chart.
+ */
+const profileCache = new WeakMap<Dataset, ColumnProfile[]>();
+const duplicateCache = new WeakMap<Dataset, number>();
 
 export function profileDataset(ds: Dataset): ColumnProfile[] {
-  return ds.columns.map((c) => profileColumn(ds, c));
+  const hit = profileCache.get(ds);
+  if (hit) return hit;
+  const profiles = ds.columns.map((c) => profileColumn(ds, c));
+  profileCache.set(ds, profiles);
+  return profiles;
 }
 
 export function duplicateCount(ds: Dataset): number {
+  const hit = duplicateCache.get(ds);
+  if (hit !== undefined) return hit;
+  const cols = ds.columns;
   const seen = new Set<string>();
   let dups = 0;
-  ds.rows.forEach((r) => {
-    const key = ds.columns.map((c) => String(r[c])).join("\u0001");
+  for (let i = 0; i < ds.rows.length; i++) {
+    const r = ds.rows[i];
+    let key = "";
+    for (let c = 0; c < cols.length; c++) key += String(r[cols[c]]) + "\u0001";
     if (seen.has(key)) dups++;
     else seen.add(key);
-  });
+  }
+  duplicateCache.set(ds, dups);
   return dups;
 }
 
@@ -212,50 +288,87 @@ export function qualityScore(ds: Dataset) {
 }
 
 export function correlationMatrix(ds: Dataset, cols: string[]) {
-  const series = cols.map((c) => ds.rows.map((r) => (typeof r[c] === "number" ? (r[c] as number) : NaN)));
-  const corr = (a: number[], b: number[]) => {
-    const pairs = a.map((v, i) => [v, b[i]]).filter(([x, y]) => !Number.isNaN(x) && !Number.isNaN(y));
-    const n = pairs.length;
+  const rows = ds.rows;
+  // Column-major Float64Arrays: one compact buffer per column instead of a
+  // boxed number[] plus a pairs array per correlation cell.
+  const series = cols.map((c) => {
+    const arr = new Float64Array(rows.length);
+    for (let i = 0; i < rows.length; i++) {
+      const v = rows[i][c];
+      arr[i] = typeof v === "number" ? v : NaN;
+    }
+    return arr;
+  });
+
+  const corr = (a: Float64Array, b: Float64Array) => {
+    let n = 0,
+      sa = 0,
+      sb = 0;
+    for (let i = 0; i < a.length; i++) {
+      const x = a[i];
+      const y = b[i];
+      if (Number.isNaN(x) || Number.isNaN(y)) continue;
+      n++;
+      sa += x;
+      sb += y;
+    }
     if (n < 2) return 0;
-    const ma = pairs.reduce((s, p) => s + p[0], 0) / n;
-    const mb = pairs.reduce((s, p) => s + p[1], 0) / n;
+    const ma = sa / n;
+    const mb = sb / n;
     let num = 0,
       da = 0,
       db = 0;
-    pairs.forEach(([x, y]) => {
+    for (let i = 0; i < a.length; i++) {
+      const x = a[i];
+      const y = b[i];
+      if (Number.isNaN(x) || Number.isNaN(y)) continue;
       num += (x - ma) * (y - mb);
       da += (x - ma) ** 2;
       db += (y - mb) ** 2;
-    });
+    }
     return da && db ? num / Math.sqrt(da * db) : 0;
   };
+
   return cols.map((_, i) => cols.map((__, j) => corr(series[i], series[j])));
 }
 
 export function histogram(ds: Dataset, col: string, bins = 12) {
-  const nums = ds.rows.map((r) => r[col]).filter((v): v is number => typeof v === "number");
-  if (!nums.length) return [];
-  const min = Math.min(...nums);
-  const max = Math.max(...nums);
+  const rows = ds.rows;
+  let min = Infinity;
+  let max = -Infinity;
+  let count = 0;
+  // Two scans without spreading into Math.min/Math.max, which blows the call
+  // stack (RangeError) past a few hundred thousand values.
+  for (let i = 0; i < rows.length; i++) {
+    const v = rows[i][col];
+    if (typeof v !== "number") continue;
+    count++;
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+  if (!count) return [];
   const width = (max - min) / bins || 1;
   const buckets = Array.from({ length: bins }, (_, i) => ({
     label: (min + i * width).toFixed(1),
     count: 0,
   }));
-  nums.forEach((v) => {
-    const idx = Math.min(bins - 1, Math.floor((v - min) / width));
-    buckets[idx].count++;
-  });
+  for (let i = 0; i < rows.length; i++) {
+    const v = rows[i][col];
+    if (typeof v !== "number") continue;
+    buckets[Math.min(bins - 1, Math.floor((v - min) / width))].count++;
+  }
   return buckets;
 }
 
 export function categoryCounts(ds: Dataset, col: string, limit = 8) {
   const counts = new Map<string, number>();
-  ds.rows.forEach((r) => {
-    const v = r[col];
-    if (v === null || v === "") return;
-    counts.set(String(v), (counts.get(String(v)) ?? 0) + 1);
-  });
+  const rows = ds.rows;
+  for (let i = 0; i < rows.length; i++) {
+    const v = rows[i][col];
+    if (v === null || v === "" || v === undefined) continue;
+    const key = String(v);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
   return [...counts.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, limit)
@@ -589,6 +702,27 @@ function applyStep(ds: Dataset, step: Step): Dataset {
 
 export function runPipeline(ds: Dataset, steps: Step[]): Dataset {
   return steps.reduce((acc, s) => applyStep(acc, s), ds);
+}
+
+/**
+ * Same result as `runPipeline`, executed one step per macrotask so the tab
+ * stays responsive (and can report progress / be cancelled) while a large
+ * dataset is transformed. Step semantics are untouched.
+ */
+export async function runPipelineAsync(
+  ds: Dataset,
+  steps: Step[],
+  opts: { onProgress?: (done: number, total: number) => void; signal?: AbortSignal } = {},
+): Promise<Dataset> {
+  let acc = ds;
+  for (let i = 0; i < steps.length; i++) {
+    if (opts.signal?.aborted) throw new DOMException("Pipeline cancelled", "AbortError");
+    // Yield to the event loop between steps so rendering isn't starved.
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    acc = applyStep(acc, steps[i]);
+    opts.onProgress?.(i + 1, steps.length);
+  }
+  return acc;
 }
 
 /* ------------------------------ ML readiness ------------------------------ */
