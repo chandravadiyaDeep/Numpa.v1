@@ -85,11 +85,52 @@ export const store = {
     if (!state.steps.length && !state.processed) return;
     set({ steps: [], processed: null, past: [...state.past, state.steps], future: [] });
   },
+  /**
+   * Execute the pipeline off the render path. Fire-and-forget for callers
+   * (same call signature as before); progress and errors land in the store.
+   */
   run() {
-    if (!state.dataset) return;
-    set({ processed: runPipeline(state.dataset, state.steps) });
+    if (!state.dataset || state.running) return;
+    const controller = new AbortController();
+    runController?.abort();
+    runController = controller;
+    const source = state.dataset;
+    const steps = state.steps;
+    set({ running: true, progress: { done: 0, total: steps.length }, runError: null });
+
+    void runPipelineAsync(source, steps, {
+      signal: controller.signal,
+      onProgress: (done, total) => {
+        if (runController === controller) set({ progress: { done, total } });
+      },
+    })
+      .then((processed) => {
+        if (runController !== controller) return;
+        set({ processed, running: false, progress: null });
+      })
+      .catch((e: unknown) => {
+        if (runController !== controller) return;
+        const aborted = e instanceof DOMException && e.name === "AbortError";
+        set({
+          running: false,
+          progress: null,
+          runError: aborted
+            ? null
+            : e instanceof RangeError
+              ? "This dataset is too large to transform in the browser. Try fewer steps or a smaller extract."
+              : "The pipeline could not be completed.",
+        });
+      });
+  },
+  /** Abort an in-flight run and release its intermediate datasets. */
+  cancelRun() {
+    runController?.abort();
+    runController = null;
+    if (state.running) set({ running: false, progress: null, runError: null });
   },
 };
+
+let runController: AbortController | null = null;
 
 const subscribe = (l: () => void) => {
   listeners.add(l);
