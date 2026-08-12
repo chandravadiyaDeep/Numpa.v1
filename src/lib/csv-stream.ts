@@ -85,7 +85,6 @@ export async function parseDelimitedStream(
   const finishRecord = () => {
     finishField();
     const isBlank = record.length === 1 && record[0] === "";
-    record.length &&= record.length; // no-op, keeps shape explicit
     if (isBlank) {
       record = [];
       return;
