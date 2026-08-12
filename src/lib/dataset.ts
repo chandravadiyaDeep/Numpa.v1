@@ -704,6 +704,27 @@ export function runPipeline(ds: Dataset, steps: Step[]): Dataset {
   return steps.reduce((acc, s) => applyStep(acc, s), ds);
 }
 
+/**
+ * Same result as `runPipeline`, executed one step per macrotask so the tab
+ * stays responsive (and can report progress / be cancelled) while a large
+ * dataset is transformed. Step semantics are untouched.
+ */
+export async function runPipelineAsync(
+  ds: Dataset,
+  steps: Step[],
+  opts: { onProgress?: (done: number, total: number) => void; signal?: AbortSignal } = {},
+): Promise<Dataset> {
+  let acc = ds;
+  for (let i = 0; i < steps.length; i++) {
+    if (opts.signal?.aborted) throw new DOMException("Pipeline cancelled", "AbortError");
+    // Yield to the event loop between steps so rendering isn't starved.
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    acc = applyStep(acc, steps[i]);
+    opts.onProgress?.(i + 1, steps.length);
+  }
+  return acc;
+}
+
 /* ------------------------------ ML readiness ------------------------------ */
 
 export function mlReadiness(ds: Dataset) {
