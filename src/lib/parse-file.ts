@@ -1,4 +1,4 @@
-import { parseCsv, type Dataset, type Row } from "./dataset";
+import type { Dataset, Row } from "./dataset";
 
 export type SourceFormat = "csv" | "xlsx" | "json";
 
