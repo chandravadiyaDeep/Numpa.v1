@@ -75,6 +75,9 @@ export function Uploader({
           {label}
         </button>
         {input}
+        {status && !error && (
+          <p className="mt-2 max-w-xs text-right text-xs text-muted-foreground">{status}</p>
+        )}
         {error && <p className="mt-2 max-w-xs text-right text-xs text-destructive">{error}</p>}
       </div>
     );
