@@ -44,9 +44,13 @@ const commit = (steps: Step[]) =>
 
 export const store = {
   setDataset(dataset: Dataset) {
+    runController?.abort();
+    runController = null;
     set({ ...empty, dataset });
   },
   clear() {
+    runController?.abort();
+    runController = null;
     set({ ...empty });
   },
   setTarget(target: string | null) {
