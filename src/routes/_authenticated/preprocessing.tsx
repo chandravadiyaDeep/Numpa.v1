@@ -57,7 +57,7 @@ const VALUE_HINT: Record<string, { label: string; placeholder: string }> = {
 };
 
 function PreprocessingPage() {
-  const { dataset, steps, processed, past, future } = useStudio();
+  const { dataset, steps, processed, past, future, running, progress, runError } = useStudio();
   const [op, setOp] = useState<OperationId>("missing");
   const [column, setColumn] = useState("");
   const [method, setMethod] = useState("median");
