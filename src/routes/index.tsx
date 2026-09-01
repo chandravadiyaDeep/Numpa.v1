@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   BarChart3,
@@ -9,16 +8,13 @@ import {
   FileUp,
   Layers,
   LineChart,
-  LogOut,
   MessageSquare,
   Search,
   ShieldCheck,
   Table2,
-  User,
   Wand2,
 } from "lucide-react";
 import { useSession } from "@/hooks/useSession";
-import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -96,29 +92,11 @@ function Landing() {
   const { user, loading } = useSession();
   const authed = Boolean(user) && !loading;
   const [step, setStep] = useState(0);
-  const queryClient = useQueryClient();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const id = setInterval(() => setStep((s) => (s + 1) % FLOW.length), 1600);
     return () => clearInterval(id);
   }, []);
-
-  useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, []);
-
-  const signOut = async () => {
-    setMenuOpen(false);
-    await queryClient.cancelQueries();
-    queryClient.clear();
-    await supabase.auth.signOut();
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -145,47 +123,14 @@ function Landing() {
 
           <div className="ml-auto flex items-center gap-2">
             {authed ? (
-              <>
-                <Link
-                  to="/dashboard"
-                  className="inline-flex h-9 items-center gap-2 rounded-lg brand-gradient px-4 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-                >
-                  Open workspace
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-                <div className="relative" ref={menuRef}>
-                  <button
-                    aria-label="User menu"
-                    onClick={() => setMenuOpen((o) => !o)}
-                    className="grid h-9 w-9 place-items-center rounded-lg border bg-secondary/60 text-foreground transition-colors hover:bg-secondary"
-                  >
-                    <User className="h-4 w-4" />
-                  </button>
-                  {menuOpen && (
-                    <div className="absolute right-0 top-11 z-50 w-56 overflow-hidden rounded-xl border bg-popover p-1.5 shadow-xl">
-                      <p className="truncate px-2.5 py-2 text-xs text-muted-foreground">
-                        {user?.email ?? "Signed in"}
-                      </p>
-                      <Link
-                        to="/profile"
-                        onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-secondary"
-                      >
-                        <User className="h-4 w-4" />
-                        Profile
-                      </Link>
-                      <button
-                        onClick={signOut}
-                        className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-secondary"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        Sign out
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : !loading ? (
+              <Link
+                to="/dashboard"
+                className="inline-flex h-9 items-center gap-2 rounded-lg brand-gradient px-4 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+              >
+                Open workspace
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            ) : (
               <>
                 <Link
                   to="/login"
@@ -200,7 +145,7 @@ function Landing() {
                   Sign Up
                 </Link>
               </>
-            ) : null}
+            )}
           </div>
         </div>
       </header>

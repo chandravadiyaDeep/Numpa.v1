@@ -4,7 +4,6 @@ import { Database, LogOut, Moon, Sun, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { hydrateStudio, useStudio } from "@/lib/studio-store";
 import { supabase } from "@/integrations/supabase/client";
-import { useSession } from "@/hooks/useSession";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard" },
@@ -20,14 +19,14 @@ export function TopNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user, loading } = useSession();
-  const authed = Boolean(user);
   const [dark, setDark] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [email, setEmail] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     hydrateStudio();
+    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
   }, []);
 
   useEffect(() => {
@@ -92,54 +91,37 @@ export function TopNav() {
           >
             {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
-          {authed ? (
-            <div className="relative" ref={menuRef}>
-              <button
-                aria-label="User menu"
-                onClick={() => setMenuOpen((o) => !o)}
-                className="grid h-9 w-9 place-items-center rounded-lg border bg-secondary/60 text-foreground transition-colors hover:bg-secondary"
-              >
-                <User className="h-4 w-4" />
-              </button>
-              {menuOpen && (
-                <div className="absolute right-0 top-11 z-50 w-56 overflow-hidden rounded-xl border bg-popover p-1.5 shadow-xl">
-                  <p className="truncate px-2.5 py-2 text-xs text-muted-foreground">
-                    {user?.email ?? "Signed in"}
-                  </p>
-                  <Link
-                    to="/profile"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-secondary"
-                  >
-                    <User className="h-4 w-4" />
-                    Profile
-                  </Link>
-                  <button
-                    onClick={signOut}
-                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-secondary"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Sign out
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : !loading ? (
-            <div className="flex items-center gap-2">
-              <Link
-                to="/login"
-                className="inline-flex h-9 items-center rounded-lg border bg-secondary/60 px-3.5 text-xs font-medium transition-colors hover:bg-secondary"
-              >
-                Sign In
-              </Link>
-              <Link
-                to="/signup"
-                className="inline-flex h-9 items-center rounded-lg brand-gradient px-4 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-              >
-                Sign Up
-              </Link>
-            </div>
-          ) : null}
+          <div className="relative" ref={menuRef}>
+            <button
+              aria-label="User menu"
+              onClick={() => setMenuOpen((o) => !o)}
+              className="grid h-9 w-9 place-items-center rounded-lg border bg-secondary/60 text-foreground transition-colors hover:bg-secondary"
+            >
+              <User className="h-4 w-4" />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-11 z-50 w-56 overflow-hidden rounded-xl border bg-popover p-1.5 shadow-xl">
+                <p className="truncate px-2.5 py-2 text-xs text-muted-foreground">
+                  {email ?? "Signed in"}
+                </p>
+                <Link
+                  to="/profile"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-secondary"
+                >
+                  <User className="h-4 w-4" />
+                  Profile
+                </Link>
+                <button
+                  onClick={signOut}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-secondary"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </button>
+              </div>
+            )}
+          </div>
 
         </div>
       </div>
